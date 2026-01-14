@@ -2040,281 +2040,6 @@ remove$clusters<-factor(as.character(remove$clusters), levels = c("Group C", "Gr
 
 ```
 
-```{r Figure S3d absolute cell numbers}
-
-cellcounts<-PBMC_counts_Chipcytoemtry_MW_ES_Mri_JG <- read_excel("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/PBMC_counts_Chipcytoemtry_MW_ES_Mri_JG.xlsx", sheet = "absolute cell counts")
-cellcounts$chip_id[cellcounts$chip_id=="M835045"]<-c("M835045_1", "M835045_2")
-cellcounts$chip_id[cellcounts$chip_id=="M835057"]<-c("M835057_1", "M835057_2")
-
-cellcounts$M4<-cellcounts$M4+cellcounts$M9
-cellcounts$M9<-NULL
-cellcounts$B2<-cellcounts$B2+cellcounts$B12
-cellcounts$B12<-NULL
-cellcounts$B2<-cellcounts$B2+cellcounts$B8
-cellcounts$B8<-NULL
-cellcounts$B3<-cellcounts$B3+cellcounts$B13
-cellcounts$B13<-NULL
-cellcounts$B3<-cellcounts$B10+cellcounts$B3
-cellcounts$B10<-NULL
-cellcounts$T4<-cellcounts$T4+cellcounts$T9
-cellcounts$T9<-NULL
-cellcounts$M5<-cellcounts$M5+cellcounts$M15
-cellcounts$M15<-NULL
-
-#rename
-colnames(cellcounts)[colnames(cellcounts)=="M14"]<-"ILC2"
-colnames(cellcounts)[colnames(cellcounts)=="M8"]<-"others1"
-colnames(cellcounts)[colnames(cellcounts)=="M6"]<-"others2"
-
-colnames(cellcounts)[colnames(cellcounts)=="B9"]<-"B8"
-colnames(cellcounts)[colnames(cellcounts)=="B11"]<-"B9"
-colnames(cellcounts)[colnames(cellcounts)=="B14"]<-"B10"
-
-colnames(cellcounts)[colnames(cellcounts)=="M7"]<-"M6"
-colnames(cellcounts)[colnames(cellcounts)=="M10"]<-"M7"
-colnames(cellcounts)[colnames(cellcounts)=="M11"]<-"M8"
-colnames(cellcounts)[colnames(cellcounts)=="M12"]<-"M9"
-colnames(cellcounts)[colnames(cellcounts)=="M13"]<-"M10"
-
-colnames(cellcounts)[colnames(cellcounts)=="T10"]<-"T9"
-colnames(cellcounts)[colnames(cellcounts)=="T11"]<-"T10"
-colnames(cellcounts)[colnames(cellcounts)=="T12"]<-"T11"
-colnames(cellcounts)[colnames(cellcounts)=="T13"]<-"T12"
-colnames(cellcounts)[colnames(cellcounts)=="T14"]<-"T13"
-colnames(cellcounts)[colnames(cellcounts)=="T15"]<-"T14"
-
-cellcounts$others1<-cellcounts$others1+cellcounts$others2
-colnames(cellcounts)[colnames(cellcounts)=="others1"]<-"others"
-cellcounts$others2<-NULL
-
-#stacked plots MCT
-
-subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "T")]
-"T cells"<-subdata[,-c(14, 16:19)]%>%rowSums()
-
-"B cells"<-cellcounts[,stringr::str_detect(colnames(cellcounts), "B")]%>%rowSums()
-
-"NK cells"<-cellcounts[,stringr::str_detect(colnames(cellcounts), "NK")]%>%rowSums()
-
-subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "M")]
-"Myeloid cells"<-subdata[,-c(11)]%>%rowSums()
-
-subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "ST")]
-"Stem cells"<-subdata[,-c(4)]%>%rowSums()
-
-"ILC2"<-cellcounts$ILC2
-
-"N/A"<-cellcounts$others
-
-subdata<-as.data.frame(cbind(`T cells`, `B cells`, `NK cells`, `Myeloid cells`, `Stem cells`, `ILC2`, `N/A`))
-
-subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
-subdata<-na.omit(subdata)
-data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:8)
-data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
-data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
-data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
-
-data_grouped$name[data_grouped$name=="T cells"]<-"TC"
-data_grouped$name[data_grouped$name=="B cells"]<-"BC"
-data_grouped$name[data_grouped$name=="NK cells"]<-"NKC"
-data_grouped$name[data_grouped$name=="Myeloid cells"]<-"MC"
-data_grouped$name[data_grouped$name=="Stem cells"]<-"SC"
-data_grouped$name<-factor(as.character(data_grouped$name), levels=c("TC","BC", "ILC2", "MC","NKC", "SC", "N/A"))
-
-stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
-    geom_bar(position='stack', stat='identity')+
-    #scale_fill_manual("Celltype", values = c("#ff3366", "#ff6633", 	"#ffcc33", "#33cc99", "#3399ff"))+
-   scale_fill_manual("Celltype", values =   c("#3399ff", "#ff3366", "#AE70A8", "#ff6633", "#ffcc33", "#33cc99", "grey"))+
-    labs(title = "Main cell types")+
-    ylab("PBMCs/ml [x10^6]")+
-    theme_classic()+
-      theme(legend.text = element_text(size=60), 
-          legend.title = element_blank(), 
-          axis.title = element_text(size=60),
-          axis.text = element_text(size=60),
-          plot.title = element_text(size=70),
-          axis.title.x = element_blank(),
-#          axis.text.x=element_text(angle=90, vjust=0.4),
-          aspect.ratio = 1.5)
-  
-
-  
-  tiff(filename="FigS3d_PBMCcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
-  plot(stacked_barplot)
-  dev.off()
-
-#stacked plots T cells
-
-subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "T")]
-subdata<-subdata[,-c(14, 16:19)]
-subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
-subdata<-na.omit(subdata)
-data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:15)
-data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
-data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
-data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
-
-stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
-    geom_bar(position='stack', stat='identity')+
-    scale_fill_manual("Celltype", values = color_clusters)+
-    labs(title = "T cells")+
-    ylab("PBMC/ml [x10^6]")+
-    theme_classic()+
-      theme(legend.text = element_text(size=60), 
-          legend.title = element_blank(), 
-          axis.title = element_text(size=60),
-          axis.text = element_text(size=60),
-          plot.title = element_text(size=70),
-          axis.title.x = element_blank(),
-#          axis.text.x=element_text(angle=90, vjust=0.4),
-          aspect.ratio = 1.5)
-  
-
-  
-  tiff(filename="FigS3d_Tcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
-  plot(stacked_barplot)
-  dev.off()
-
-  
-  #stacked plots B cells
-subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "B")]
-
-subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
-subdata<-na.omit(subdata)
-data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:11)
-data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
-data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
-data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
-
-stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
-    geom_bar(position='stack', stat='identity')+
-    scale_fill_manual("Celltype", values = color_clusters)+
-    labs(title = "B cells")+
-    ylab("PBMC/ml [x10^6]")+
-    theme_classic()+
-      theme(legend.text = element_text(size=60), 
-          legend.title = element_blank(), 
-          axis.title = element_text(size=60),
-          axis.text = element_text(size=60),
-          plot.title = element_text(size=70),
-          axis.title.x = element_blank(),
-#          axis.text.x=element_text(angle=90, vjust=0.4),
-          aspect.ratio = 1.5)
-  
-
-  
-  tiff(filename="FigS3d_Bcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
-  plot(stacked_barplot)
-  dev.off()
-
-  
-  #stacked plots NK cells
-subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "NK")]
-
-subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
-subdata<-na.omit(subdata)
-data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:6)
-data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
-data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
-data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
-
-stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
-    geom_bar(position='stack', stat='identity')+
-    scale_fill_manual("Celltype", values = color_clusters)+
-    labs(title = "NK cells")+
-    ylab("PBMC/ml [x10^6]")+
-    theme_classic()+
-      theme(legend.text = element_text(size=60), 
-          legend.title = element_blank(), 
-          axis.title = element_text(size=60),
-          axis.text = element_text(size=60),
-          plot.title = element_text(size=70),
-          axis.title.x = element_blank(),
-#          axis.text.x=element_text(angle=90, vjust=0.4),
-          aspect.ratio = 1.5)
-  
-
-  
-  tiff(filename="FigS3d_NKcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
-  plot(stacked_barplot)
-  dev.off()
-
-  
-  #stacked plots myeloid cells
-subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "M")]
-subdata<-subdata[,-c(11)]
-subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
-subdata<-na.omit(subdata)
-data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:11)
-data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
-data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
-data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
-
-stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
-    geom_bar(position='stack', stat='identity')+
-    scale_fill_manual("Celltype", values = color_clusters)+
-    labs(title = "Myeloid cells")+
-    ylab("PBMC/ml [x10^6]")+
-    theme_classic()+
-      theme(legend.text = element_text(size=60), 
-          legend.title = element_blank(), 
-          axis.title = element_text(size=60),
-          axis.text = element_text(size=60),
-          plot.title = element_text(size=70),
-          axis.title.x = element_blank(),
-#          axis.text.x=element_text(angle=90, vjust=0.4),
-          aspect.ratio = 1.5)
-  
-
-  
-  tiff(filename="FigS3d_Myeloidcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
-  plot(stacked_barplot)
-  dev.off()
-
-  
-  #stacked plots stem cells
-subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "ST")]
-subdata<-subdata[,-c(4)]
-subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
-subdata<-na.omit(subdata)
-data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:4)
-data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
-data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
-data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
-
-stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
-    geom_bar(position='stack', stat='identity')+
-    scale_fill_manual("Celltype", values = color_clusters)+
-    labs(title = "Stem cells")+
-    ylab("PBMC/ml [x10^6]")+
-    theme_classic()+
-      theme(legend.text = element_text(size=60), 
-          legend.title = element_blank(), 
-          axis.title = element_text(size=60),
-          axis.text = element_text(size=60),
-          plot.title = element_text(size=70),
-          axis.title.x = element_blank(),
-#          axis.text.x=element_text(angle=90, vjust=0.4),
-          aspect.ratio = 1.5)
-  
-
-  
-  tiff(filename="FigS3d_Stemcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
-  plot(stacked_barplot)
-  dev.off()
-
-as.data.frame(as.numeric(metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]))->metaMat
-
-metaMat<-as.data.frame(metaMat[!is.na(rowSums(as.data.frame(cellcounts[1:44]))),])
-colnames(metaMat)<-"Age"
-
-eff_size_plot(metaMat=metaMat, featureMat = na.omit(as.data.frame(cellcounts[1:44])), logistic = FALSE, filename="figS3d_effsize_TPs.tiff")
-
-
-
-```
-
 ```{r Figure 4 Effect sizes on BPD/Sepsis}
 #effect size of sepsis and bpd (figure 
 metaMat<-metadata
@@ -2526,9 +2251,133 @@ ggsave(filename="dendor.tiff", plot=ggdendro::ggdendrogram(hc, linewidth=6), wid
 
 ```{r Figure 5 Trajectories and Immunotypes}
 
-trajectories <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/all_changes_trajectories.rds")
-freq_imputed <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/all_changes_freq_imputed_timepoints_failed_removed.rds")
-#leiden_clusters_imputed_reduced <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/leiden_clusters_final.rds")
+#do mice imputation beforehand
+freq_list<-apply(freq[1:43], 2, FUN = function(x) { x<-data.frame(x, "timepoint"=metadata$timepoint_cat, "chip"=metadata$chip_id, "patient"=metadata$MHH_PatID )%>%          
+                                                    pivot_wider(id_cols = patient, names_from=timepoint, values_from = c(1), id_expand=TRUE, names_sort = TRUE)
+                                                    colnames(x)[2:4]<-c("t1", "t2", "t3")
+                                                    return(x)})
+
+  cl <- parallel::makeCluster(
+  detectCores()-2
+)
+  
+clusterExport(cl=cl, varlist = c("mice_impute_rf", "freq_list", "%>%"))
+freq_imputed<-parLapply(cl=cl, X=freq_list, fun=function(x)tryCatch({mice_impute_rf(x, donorID="patient")}, error=function(e){return(e)}) )
+#freq_imputed<-lapply(freq_list, FUN=function(x) mice_impute_rf(x, donorID="patient"))
+stopCluster(cl)
+
+#remoce imputations where calculation failed
+freq_imputed[lengths(freq_imputed)==4]->freq_imputed
+
+data.table::rbindlist(freq_imputed[1:length(freq_imputed)], idcol="celltype")->freq_imputed
+rbind(pivot_wider(freq_imputed, id_cols = patient, names_from = celltype, values_from = "1")%>%mutate("timepoint"=rep(1, 114)),
+      pivot_wider(freq_imputed, id_cols = patient, names_from = celltype, values_from = "2")%>%mutate("timepoint"=rep(2, 114)),
+      pivot_wider(freq_imputed, id_cols = patient, names_from = celltype, values_from = "3")%>%mutate("timepoint"=rep(3, 114)))->freq_imputed
+
+#calculate gap statistic for imputed data and original data
+gap_statisic<-function(freq, output_name, ncol){
+gap_results<-list()
+library(progress)
+pb<-progress_bar$new(
+  format = "  Gap statisic [:bar] :percent eta: :eta",
+  total = length(ncol), clear = FALSE, width= 60)
+freq<-freq[ncol]
+ncol<-1:(ncol(freq))
+for (i in ncol){
+  if(nrow(freq)==252){
+  data.frame(freq[,i], "timepoint"=metadata$timepoint_cat, "chip"=metadata$chip_id, "patient"=metadata$MHH_PatID )%>%          
+  pivot_wider(id_cols = patient, names_from=timepoint, values_from = colnames(freq)[i], id_expand=TRUE, names_sort = TRUE)->data}
+  else if (nrow(freq)==342){
+  data.frame(freq[,i], "timepoint"=freq_imputed$timepoint, "patient"=freq_imputed$patient)%>%          
+  pivot_wider(id_cols = patient, names_from=timepoint, values_from = colnames(freq)[i], id_expand=TRUE, names_sort = TRUE)->data
+  }
+  
+  gap_results[[i]]<-clusGap(na.omit(data[2:4]), motifcluster::kmeanspp, K.max=7, B=500, verbose = FALSE)
+  pb$tick()
+}
+
+names(gap_results)<-colnames(freq)[ncol]
+
+best_k<-function(x){maxSE(f=x[["Tab"]][,3], x[["Tab"]][,4])}
+
+lapply(gap_results, best_k)->best_k
+
+plot_clusgap <- function(clusgap, title="Gap Statistic results"){
+	gstab = data.frame(clusgap$Tab, k = 1:nrow(clusgap$Tab))
+	p = ggplot(gstab, aes(k, gap)) + geom_line() + geom_point(size = 1)
+	p = p + geom_errorbar(aes(ymax = gap + SE.sim, ymin = gap - SE.sim))
+	p = p + ggtitle(title)+theme(plot.title = element_text(size=7))
+	return(p)
+}
+
+lapply(seq(names(gap_results)), function(x) plot_clusgap(gap_results[[x]], title=names(gap_results)[x]))->gap_results
+
+for(i in ncol){
+  if(best_k[[i]]>1){
+    gap_results[[i]]<-gap_results[[i]]+
+                      geom_vline(xintercept=best_k[[i]], size=1)+
+                      theme(panel.border = element_rect( color="green", fill=NA, size= 1))
+  } else {
+    gap_results[[i]]<-gap_results[[i]]+geom_vline(xintercept=best_k[[i]], size=1)}
+}
+
+cowplot::plot_grid(plotlist=gap_results)->p
+
+pdf(output_name, width = 14, height = 10)
+print(p)
+dev.off()
+
+return(gap_results)
+}
+
+gap_statisic(freq, "clusGap_result_original.pdf", ncol=1:44)->clusGab_results_original
+gap_statisic(freq_imputed, "clusGap_result_imputed.pdf", ncol=2:(ncol(freq_imputed)-1))->clusGap_results_imputed
+
+saveRDS(freq_imputed, "freq_imputed.rds")
+```
+
+#kml clustering on imputed data
+```{r}
+
+#do it in a for loop
+
+trajectories<-list()
+clusters<-data.frame(rep("patient", 114))
+colnames(clusters)<-"patient"
+
+for(i in 2:(ncol(freq_imputed)-1)){
+  
+  set.seed(12345)
+  
+  data.frame(freq_imputed[,i], "timepoint"=freq_imputed$timepoint, 
+             "patient"=freq_imputed$patient)%>%          
+  pivot_wider(id_cols = patient, names_from=timepoint, values_from = colnames(freq_imputed)[i], id_expand=TRUE, names_sort = TRUE)%>%
+  na.omit()->subdata
+
+              
+  clusters$patient<-subdata$patient
+  
+  clusterLongData(subdata[2:4], idAll = subdata$patient, maxNA = 2)->cld
+
+  cld["initializationMethod"] <- "kmeans++"
+  
+  kml(cld, nbRedrawing = 1000, nbClusters = 2:6, parAlgo = parALGO(startingCond = "kmeans++", imputationMethod = "copyMean", scale = T, saveFreq = Inf))
+  
+  
+   crit<-c(mean(unlist(lapply(cld@c2, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld@c3, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld@c4, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld@c5, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld@c6, function(x) x@criterionValues[["Calinski.Harabatz"]]))))
+   
+   
+  trajectories[[colnames(freq_imputed)[i]]][["cld"]]<-cld
+  clusters<-cbind(clusters, kml::getClusters(xCld=cld, nbCluster = which(crit==max(crit))+1))
+  colnames(clusters)[ncol(clusters)]<-colnames(freq_imputed)[i]
+
+}
+
+saveRDS(trajectories, "trajectories.rds")
 
 #rename freq imputed and trajectories
 #rename
@@ -4252,5 +4101,6 @@ ggplot(dat, aes(x = group_lockdown_sum, y = mean_count, fill = group_lockdown_su
 ```
 
  
+
 
 
