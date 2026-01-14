@@ -1,0 +1,4256 @@
+---
+title: "Paper_code"
+author: "Jonas Geldner"
+date: "2024-10-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r initial data analysis}
+if(FALSE){
+all_myeloid<-all_combined[all_combined$cluster=="myeloid cells",]
+
+all_t<-all_combined[all_combined$cluster=="T-cells",]
+
+all_b<-all_combined[all_combined$cluster=="B-cells",]
+
+all_nk<-all_combined[all_combined$cluster=="NK-cells",]
+
+
+set.seed(12345)
+myeloid_equal <- all_myeloid %>% group_by(timepoint) %>% slice_sample(n=min(table(all_myeloid$timepoint)))
+
+set.seed(12345)
+t_equal <- all_t %>% group_by(timepoint) %>% slice_sample(n=min(table(all_t$timepoint)))
+
+set.seed(12345)
+b_equal <- all_b %>% group_by(timepoint) %>% slice_sample(n=min(table(all_b$timepoint)))
+
+set.seed(12345)
+nk_equal <- all_nk %>% group_by(timepoint) %>% slice_sample(n=min(table(all_nk$timepoint)))
+
+
+
+gc()
+set.seed(12345)
+bluster::makeSNNGraph(t_equal[1:30])->snn_t_equal
+set.seed(12345)
+bluster::makeSNNGraph(myeloid_equal[1:30])->snn_myeloid_equal
+set.seed(12345)
+bluster::makeSNNGraph(nk_equal[1:30])->snn_nk_equal
+set.seed(12345)
+bluster::makeSNNGraph(b_equal[1:30])->snn_b_equal
+
+gc()
+set.seed(12345)
+igraph::cluster_leiden(snn_t_equal, resolution_parameter=0.0053, objective_function = "CPM", n_iterations = -1)->leiden_t_equal
+
+set.seed(12345)
+igraph::cluster_leiden(snn_nk_equal, resolution_parameter=0.003, objective_function = "CPM", n_iterations = -1)->leiden_nk_equal
+
+set.seed(12345)
+igraph::cluster_leiden(snn_b_equal, resolution_parameter=0.0031, objective_function = "CPM", n_iterations = -1)->leiden_b_equal
+
+set.seed(12345)
+igraph::cluster_leiden(snn_myeloid_equal, resolution_parameter=0.0024, objective_function = "CPM", n_iterations = -1)->leiden_myeloid_equal
+
+saveRDS(leiden_t_equal, "leiden_t_equal.rds")
+saveRDS(leiden_b_equal, "leiden_b_equal.rds")
+saveRDS(leiden_nk_equal, "leiden_nk_equal.rds")
+saveRDS(leiden_myeloid_equal, "leiden_myeloid_equal.rds")
+
+t_equal$subcluster<-factor(membership(leiden_t_equal))
+b_equal$subcluster<-factor(membership(leiden_b_equal))
+nk_equal$subcluster<-factor(membership(leiden_nk_equal))
+myeloid_equal$subcluster<-factor(membership(leiden_myeloid_equal))
+
+
+gc()
+memory.limit(9999999999999)
+
+GroupSmallClusters(ids=membership(leiden_nk_equal), SNN=snn_nk_equal, min_cell = 200)->leiden_nk_equal_grouped
+
+GroupSmallClusters(ids=membership(leiden_myeloid_equal), SNN=snn_myeloid_equal, min_cell = 200)->leiden_myeloid_equal_grouped
+
+GroupSmallClusters(ids=membership(leiden_t_equal), SNN=snn_t_equal, min_cell = 200)->leiden_t_equal_grouped
+
+GroupSmallClusters(ids=membership(leiden_b_equal), SNN=snn_b_equal, min_cell = 200)->leiden_b_equal_grouped
+
+t_equal$subcluster<-factor(leiden_t_equal_grouped)
+b_equal$subcluster<-factor(leiden_b_equal_grouped)
+nk_equal$subcluster<-factor(leiden_nk_equal_grouped)
+myeloid_equal$subcluster<-factor(leiden_myeloid_equal_grouped)
+
+saveRDS(leiden_t_equal_grouped, "leiden_t_equal_grouped.rds")
+saveRDS(leiden_b_equal_grouped, "leiden_b_equal_grouped.rds")
+saveRDS(leiden_nk_equal_grouped, "leiden_nk_equal_grouped.rds")
+saveRDS(leiden_myeloid_equal_grouped, "leiden_myeloid_equal_grouped.rds")
+
+gc()
+set.seed(12345)
+uwot::umap(b_equal[1:30], ret_model=TRUE)->umap_b_equal
+
+gc()
+set.seed(12345)
+uwot::umap(t_equal[1:30], ret_model=TRUE)->umap_t_equal
+
+gc()
+set.seed(12345)
+uwot::umap(nk_equal[1:30], ret_model=TRUE)->umap_nk_equal
+
+gc()
+set.seed(12345)
+uwot::umap(myeloid_equal[1:30], ret_model=TRUE)->umap_myeloid_equal
+
+saveRDS(umap_b_equal, "umap_b_equal.rds")
+saveRDS(umap_myeloid_equal, "umap_myeloid_equal.rds")
+saveRDS(umap_nk_equal, "umap_nk_equal.rds")
+saveRDS(umap_t_equal, "umap_t_equal.rds")
+
+#stemcells
+all_stem<-all_combined[all_combined$cluster=="stem cells",]
+saveRDS(all_stem , "all_stem.rds")
+
+set.seed(12345)
+stem_equal <- all_stem %>% group_by(timepoint) %>% slice_sample(n=min(table(all_stem$timepoint)))
+
+set.seed(12345)
+uwot::umap(all_stem[1:30], ret_model=TRUE)->umap_stem
+saveRDS(umap_stem, "umap_stem.rds")
+
+set.seed(12345)
+bluster::makeSNNGraph(all_stem[1:30])->snn_stem
+saveRDS(snn_stem, "snn_stem.rds")
+
+set.seed(12345)
+igraph::cluster_leiden(snn_stem, resolution_parameter=0.0143, objective_function = "CPM", n_iterations = -1)->leiden_stem
+
+saveRDS(leiden_stem, "leiden_stem.rds")
+
+all_stem$subcluster<-factor(membership(leiden_stem))
+
+GroupSmallClusters(ids=all_stem$subcluster, SNN = snn_stem, min_cell = 20)->leiden_stem_grouped
+
+all_stem$subcluster<-leiden_stem_grouped
+saveRDS(leiden_stem_grouped, "leiden_stem_grouped.rds")
+
+#equal
+set.seed(12345)
+uwot::umap(stem_equal[1:30], ret_model=TRUE)->umap_stem_equal
+saveRDS(umap_stem_equal, "umap_stem_equal.rds")
+
+set.seed(12345)
+bluster::makeSNNGraph(stem_equal[1:30])->snn_stem_equal
+saveRDS(snn_stem_equal, "snn_stem_equal.rds")
+
+set.seed(12345)
+igraph::cluster_leiden(snn_stem_equal, resolution_parameter=0.0143, objective_function = "CPM", n_iterations = -1)->leiden_stem_equal
+
+saveRDS(leiden_stem_equal, "leiden_stem_equal.rds")
+
+stem_equal$subcluster<-factor(membership(leiden_stem_equal))
+
+GroupSmallClusters(ids=stem_equal$subcluster, SNN = snn_stem_equal, min_cell = 20)->leiden_stem_equal_grouped
+
+stem_equal$subcluster<-leiden_stem_equal_grouped
+saveRDS(leiden_stem_equal_grouped, "leiden_stem_equal_grouped.rds")
+
+}
+```
+
+
+```{r Figure 1 DONE}
+
+#hawai rainbow
+c("#ff3366", "#ff6633", 	"#ffcc33", "#33cc99", "#3399ff")
+
+color_clusters <- c("#DC050C", "#FB8072", "#1965B0", "#7BAFDE", "#882E72", 
+                    "#B17BA6", "#FF7F00", "#FDB462", "#E7298A", "#E78AC3", 
+                    "#33A02C", "#B2DF8A", "#55A1B1", "#8DD3C7", "#A6761D", 
+                    "#E6AB02", "#7570B3", "#BEAED4", "#666666", "#999999", 
+                    "#aa8282", "#d4b7b7", "#8600bf", "#ba5ce3", "#808000", 
+                    "#aeae5c", "#1e90ff", "#00bfff", "#56ff0d", "#ffff00", 
+                    "#000000", "#aaaaff", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080", 
+                    "#808080", "#808080", "#808080", "#808080", "#808080")
+
+
+if(FALSE){
+#load data for umaps
+t_equal <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/t_equal.rds")
+umap_t_equal <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/umap_t_equal.rds")
+
+all_stem <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/pipeline_gran_removed_before/selected good chips/subclustering/stem cells/all_stem.rds")
+umap_stem <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/pipeline_gran_removed_before/selected good chips/subclustering/stem cells/umap_stem.rds")
+ 
+umap_nk_equal <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/umap_nk_equal.rds")
+nk_equal <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/nk_equal.rds")
+  
+b_equal <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/b_equal.rds")
+umap_b_equal <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/umap_b_equal.rds")
+ 
+myeloid_equal <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/myeloid_equal.rds")
+umap_myeloid_equal <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/umap_myeloid_equal.rds")
+}
+umap_main_cell_type_detection <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/umap_main_cell_type_detection_new_3.rds")
+main_cell_type_detection_data <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/main_cell_type_detection_data_new_3.rds")
+
+#umap main cell types
+main_cell_type_detection_data$cluster<-as.character(main_cell_type_detection_data$cluster)
+main_cell_type_detection_data$cluster[main_cell_type_detection_data$cluster=="CD4_T-cells"|main_cell_type_detection_data$cluster=="CD8_T-cells"]<-"T cells"
+main_cell_type_detection_data$cluster[main_cell_type_detection_data$cluster=="B-cells"]<-"B cells"
+main_cell_type_detection_data$cluster[main_cell_type_detection_data$cluster=="NK-cells"]<-"NK cells"
+main_cell_type_detection_data$cluster[main_cell_type_detection_data$cluster=="myeloid cells"]<-"Myeloid cells"
+main_cell_type_detection_data$cluster[main_cell_type_detection_data$cluster=="stem cells"]<-"Stem cells"
+main_cell_type_detection_data$cluster<-factor(main_cell_type_detection_data$cluster)
+
+
+my.labels <- c("TC",
+               "BC",
+               "ILC2", 
+               "MC",
+               "NKC",
+               "SC",
+               "MN") # first create labels, add \n where appropriate.
+
+main_cell_type_detection_data$cluster<-factor(as.character(main_cell_type_detection_data$cluster), levels=c('T-cells', 'B cells', 'ILC2','Myeloid cells', 'NK cells', 'Stem cells', 'others'))
+
+as.data.frame(umap_main_cell_type_detection$embedding)->dat
+
+tiff(width = 1600, height = 1296, filename = "fig1_umap_maincells.tiff")
+ggplot2::ggplot(dat, aes(x = V1, y = V2, color=main_cell_type_detection_data$cluster))+ 
+  geom_point(size=0.05) + 
+  theme_void() + 
+  scale_color_manual(values = c("#3399ff", "#ff3366", "#AE70A8", "#ff6633", "#ffcc33", "#33cc99", "grey"), 
+                     labels=my.labels)+
+  labs(x="UMAP1", y="UMAP2")+
+  theme(aspect.ratio = 1,
+        legend.position="none")+
+    guides(color = guide_legend(override.aes = list(size = 10)))
+    
+
+dev.off()
+
+#umpas t
+dat<-t_equal
+colors<-dat$subcluster
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "T") ))])
+
+tiff(width = 1600, height = 1296, filename = "fig1_umap_tcells.tiff")
+ggplot2::ggplot(as.data.frame(umap_t_equal$embedding), aes(x = V1, y = V2, color=colors))+ 
+  geom_point(size=0.05) + 
+  theme_void() + 
+  scale_color_manual(values = color_clusters)+
+    labs(x="UMAP1", y="UMAP2")+
+  guides(color = guide_legend(override.aes = list(size = 10))) +
+  theme(aspect.ratio = 1,
+        legend.position="none")
+
+dev.off()
+
+#umap b
+
+dat<-b_equal
+colors<-dat$subcluster
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "B") ))])
+
+tiff(width = 1600, height = 1296, filename = "fig1_umap_bcells.tiff")
+ggplot2::ggplot(as.data.frame(umap_b_equal$embedding), aes(x = V1, y = V2, color=colors))+ 
+  geom_point(size=0.05) + 
+  theme_void() + 
+  scale_color_manual(values = color_clusters)+
+    labs(x="UMAP1", y="UMAP2")+
+  guides(color = guide_legend(override.aes = list(size = 10))) +
+  theme(aspect.ratio = 1,
+        legend.position="none")
+
+dev.off()
+
+#umap nk
+dat<-nk_equal
+colors<-dat$subcluster
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "NK") ))])
+
+tiff(width = 1600, height = 1296, filename = "fig1_umap_nkcells.tiff")
+ggplot2::ggplot(as.data.frame(umap_nk_equal$embedding), aes(x = V1, y = V2, color=colors))+ 
+  geom_point(size=0.05) + 
+  theme_void() + 
+  scale_color_manual(values = color_clusters)+
+    labs(x="UMAP1", y="UMAP2")+
+  guides(color = guide_legend(override.aes = list(size = 10))) +
+  theme(aspect.ratio = 1,
+        legend.position="none")
+
+dev.off()
+
+#myeloid
+dat<-myeloid_equal
+colors<-dat$subcluster
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "M") ))])
+
+tiff(width = 1600, height = 1296, filename = "fig1_umap_myeloidcells.tiff")
+ggplot2::ggplot(as.data.frame(umap_myeloid_equal$embedding), aes(x = V1, y = V2, color=colors))+ 
+  geom_point(size=0.05) + 
+  theme_void() + 
+  scale_color_manual(values = color_clusters)+
+    labs(x="UMAP1", y="UMAP2")+
+  guides(color = guide_legend(override.aes = list(size = 10))) +
+  scale_y_continuous(limits = c(NA, 5))
+  theme(aspect.ratio = 1,
+        legend.position="none")
+dev.off()
+
+#umap stem
+#use old clustering...
+all_stem_old <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/pipeline_gran_removed_before/selected good chips/subclustering/stem cells/all_stem.rds")
+
+all_stem$subcluster<-all_stem_old$subcluster
+dat<-all_stem
+colors<-new_names$`new name`[match(paste("stem cell", dat$subcluster), new_names$`old subcluster name`)]
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "ST") ))])
+
+tiff(width = 1600, height = 1296, filename = "fig1_umap_stemcells.tiff")
+ggplot2::ggplot(as.data.frame(umap_stem$embedding), aes(x = V1, y = V2, color=colors))+ 
+  geom_point(size=0.2) + 
+  theme_void() + 
+  scale_color_manual(values = color_clusters)+
+    labs(x="UMAP1", y="UMAP2")+
+  guides(color = guide_legend(override.aes = list(size = 10))) +
+  theme(aspect.ratio = 1,
+        legend.position="none")
+
+dev.off()
+
+```
+
+```{r Figure S1 DONE}
+
+dat<-main_cell_type_detection_data[1:30]
+colors<-as.character(main_cell_type_detection_data$cluster)
+colors[colors=="T-cells"]<-"TC"
+colors[colors=="B cells"]<-"BC"
+colors[colors=="Myeloid cells"]<-"MC"
+colors[colors=="NK cells"]<-"NKC"
+colors[colors=="Stem cells"]<-"SC"
+colors<-factor(colors, levels = my.labels)
+
+
+dat[1:30]%>%aggregate(by=list(colors), FUN=mean)->cluster_data
+  dist(cluster_data[2:31])%>%hclust->clusters_hierarchical_rows
+  dist(as.data.frame(t(cluster_data))[2:31,])%>%hclust->clusters_hierarchical_cols
+  rownames(cluster_data)<-cluster_data$Group.1
+  colnames(cluster_data)[29]<-paste('\u03b3','\u03b4',"-TCR", sep="")
+  colnames(cluster_data)[30]<-"IL-17A"
+  colnames(cluster_data)[28]<-"HLA-DR"
+  
+  annotation_colors<-list(`cell type`=c("#3399ff", "#ff3366", "#AE70A8", "#ff6633", "#ffcc33", "#33cc99")[1:length(cluster_data$Group.1)])
+  names(annotation_colors$`cell type`)<-rownames(cluster_data)
+  
+  
+  annotation_row<-as.data.frame(rownames(cluster_data))
+  colnames(annotation_row)<-"cell type"
+  rownames(annotation_row)<-rownames(cluster_data)
+
+  
+ pheatmap::pheatmap(cluster_data[2:31], cluster_rows = FALSE, 
+                              cluster_cols = clusters_hierarchical_cols, fontsize = 20, fontsize_col = 20, fontsize_row = 20,
+                              annotation_row = annotation_row,annotation_colors = annotation_colors, 
+                              annotation_legend = FALSE, annotation_names_row=FALSE, treeheight_col = 0, filename="figS1_heatmap_maincells.tiff",
+                     cellwidth = 17, cellheight = (17*30)/nrow(cluster_data), width=11, heigth=10)
+  
+  
+  
+dat<-t_equal
+colors<-dat$subcluster
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "T") ))])
+
+
+dat[1:30]%>%aggregate(by=list(colors), FUN=mean)->cluster_data
+  dist(cluster_data[2:31])%>%hclust->clusters_hierarchical_rows
+  dist(as.data.frame(t(cluster_data))[2:31,])%>%hclust->clusters_hierarchical_cols
+  rownames(cluster_data)<-cluster_data$Group.1
+  colnames(cluster_data)[29]<-paste('\u03b3','\u03b4',"-TCR", sep="")
+  colnames(cluster_data)[30]<-"IL-17A"
+  colnames(cluster_data)[28]<-"HLA-DR"
+  
+  annotation_colors<-list(`cell type`=color_clusters[1:length(cluster_data$Group.1)])
+  names(annotation_colors$`cell type`)<-rownames(cluster_data)
+  
+  
+  annotation_row<-as.data.frame(rownames(cluster_data))
+  colnames(annotation_row)<-"cell type"
+  rownames(annotation_row)<-rownames(cluster_data)
+  
+  pheatmap::pheatmap(cluster_data[2:31], cluster_rows = clusters_hierarchical_rows, 
+                              cluster_cols = clusters_hierarchical_cols, fontsize = 20, fontsize_col = 20, fontsize_row = 20,
+                              annotation_row = annotation_row,annotation_colors = annotation_colors, 
+                              annotation_legend = FALSE, annotation_names_row=FALSE, treeheight_col = 0, filename="figS1_heatmap_tcells.tiff",
+                     cellwidth = 17, cellheight = (17*30)/nrow(cluster_data), width=11, heigth=10)
+  
+
+
+dat<-b_equal
+colors<-dat$subcluster
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "B") ))])
+
+dat[1:30]%>%aggregate(by=list(colors), FUN=mean)->cluster_data
+  dist(cluster_data[2:31])%>%hclust->clusters_hierarchical_rows
+  dist(as.data.frame(t(cluster_data))[2:31,])%>%hclust->clusters_hierarchical_cols
+  rownames(cluster_data)<-cluster_data$Group.1
+  colnames(cluster_data)[29]<-paste('\u03b3','\u03b4',"-TCR", sep="")
+  colnames(cluster_data)[30]<-"IL-17A"
+  colnames(cluster_data)[28]<-"HLA-DR"
+  
+  annotation_colors<-list(`cell type`=color_clusters[1:length(cluster_data$Group.1)])
+  names(annotation_colors$`cell type`)<-rownames(cluster_data)
+  
+  
+  annotation_row<-as.data.frame(rownames(cluster_data))
+  colnames(annotation_row)<-"cell type"
+  rownames(annotation_row)<-rownames(cluster_data)
+  
+  pheatmap::pheatmap(cluster_data[2:31], cluster_rows = clusters_hierarchical_rows, 
+                              cluster_cols = clusters_hierarchical_cols, fontsize = 20, fontsize_col = 20, fontsize_row = 20,
+                              annotation_row = annotation_row,annotation_colors = annotation_colors, 
+                              annotation_legend = FALSE, annotation_names_row=FALSE, treeheight_col = 0, filename="figS1_heatmap_bcells.tiff",
+                     cellwidth = 17, cellheight = (17*30)/nrow(cluster_data), width=11, heigth=10)
+  
+  
+dat<-nk_equal
+colors<-dat$subcluster
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "NK") ))])
+
+dat[1:30]%>%aggregate(by=list(colors), FUN=mean)->cluster_data
+  dist(cluster_data[2:31])%>%hclust->clusters_hierarchical_rows
+  dist(as.data.frame(t(cluster_data))[2:31,])%>%hclust->clusters_hierarchical_cols
+  rownames(cluster_data)<-cluster_data$Group.1
+  colnames(cluster_data)[29]<-paste('\u03b3','\u03b4',"-TCR", sep="")
+  colnames(cluster_data)[30]<-"IL-17A"
+  colnames(cluster_data)[28]<-"HLA-DR"
+  
+  annotation_colors<-list(`cell type`=color_clusters[1:length(cluster_data$Group.1)])
+  names(annotation_colors$`cell type`)<-rownames(cluster_data)
+  
+  
+  annotation_row<-as.data.frame(rownames(cluster_data))
+  colnames(annotation_row)<-"cell type"
+  rownames(annotation_row)<-rownames(cluster_data)
+  
+  pheatmap::pheatmap(cluster_data[2:31], cluster_rows = clusters_hierarchical_rows, 
+                              cluster_cols = clusters_hierarchical_cols, fontsize = 20, fontsize_col = 20, fontsize_row = 20,
+                              annotation_row = annotation_row,annotation_colors = annotation_colors, 
+                              annotation_legend = FALSE, annotation_names_row=FALSE, treeheight_col = 0, filename="figS1_heatmap_nkcells.tiff",
+                     cellwidth = 17, cellheight = (17*30)/nrow(cluster_data), width=11, heigth=10)
+  
+dat<-myeloid_equal
+colors<-dat$subcluster
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "M") ))])
+
+dat[1:30]%>%aggregate(by=list(colors), FUN=mean)->cluster_data
+  dist(cluster_data[2:31])%>%hclust->clusters_hierarchical_rows
+  dist(as.data.frame(t(cluster_data))[2:31,])%>%hclust->clusters_hierarchical_cols
+  rownames(cluster_data)<-cluster_data$Group.1
+  colnames(cluster_data)[29]<-paste('\u03b3','\u03b4',"-TCR", sep="")
+  colnames(cluster_data)[30]<-"IL-17A"
+  colnames(cluster_data)[28]<-"HLA-DR"
+  
+  annotation_colors<-list(`cell type`=color_clusters[1:length(cluster_data$Group.1)])
+  names(annotation_colors$`cell type`)<-rownames(cluster_data)
+  
+  
+  annotation_row<-as.data.frame(rownames(cluster_data))
+  colnames(annotation_row)<-"cell type"
+  rownames(annotation_row)<-rownames(cluster_data)
+  
+  pheatmap::pheatmap(cluster_data[2:31], cluster_rows = clusters_hierarchical_rows, 
+                              cluster_cols = clusters_hierarchical_cols, fontsize = 20, fontsize_col = 20, fontsize_row = 20,
+                              annotation_row = annotation_row,annotation_colors = annotation_colors, 
+                              annotation_legend = FALSE, annotation_names_row=FALSE, treeheight_col = 0, filename="figS1_heatmap_myeloidcells.tiff",
+                     cellwidth = 17, cellheight = (17*30)/nrow(cluster_data), width=11, heigth=10)
+dat<-all_stem
+colors<-new_names$`new name`[match(paste("stem cell", dat$subcluster), new_names$`old subcluster name`)]
+colors<-factor(as.character(colors), levels = unique(colors)[ order(as.numeric(stringr::str_remove(unique(colors), "ST") ))])
+
+dat[1:30]%>%aggregate(by=list(colors), FUN=mean)->cluster_data
+  dist(cluster_data[2:31])%>%hclust->clusters_hierarchical_rows
+  dist(as.data.frame(t(cluster_data))[2:31,])%>%hclust->clusters_hierarchical_cols
+  rownames(cluster_data)<-cluster_data$Group.1
+  colnames(cluster_data)[29]<-paste('\u03b3','\u03b4',"-TCR", sep="")
+  colnames(cluster_data)[30]<-"IL-17A"
+  colnames(cluster_data)[28]<-"HLA-DR"
+  
+  annotation_colors<-list(`cell type`=color_clusters[1:length(cluster_data$Group.1)])
+  names(annotation_colors$`cell type`)<-rownames(cluster_data)
+  
+  
+  annotation_row<-as.data.frame(rownames(cluster_data))
+  colnames(annotation_row)<-"cell type"
+  rownames(annotation_row)<-rownames(cluster_data)
+  
+  pheatmap::pheatmap(cluster_data[2:31], cluster_rows = clusters_hierarchical_rows, 
+                              cluster_cols = clusters_hierarchical_cols, fontsize = 20, fontsize_col = 20, fontsize_row = 20,
+                              annotation_row = annotation_row,annotation_colors = annotation_colors, 
+                              annotation_legend = FALSE, annotation_names_row=FALSE, treeheight_col = 0, filename="figS1_heatmap_stemcells.tiff",
+                     cellwidth = 17, cellheight = (17*30)/nrow(cluster_data), width=11, heigth=10)
+  
+  
+#new plot to integrate into figure 1
+all_combined <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/all_combined_new_3.rds")
+raw_data_subclusters[1:30]%>%aggregate(by=list(raw_data_subclusters$cluster), FUN=median)%>%pivot_longer(cols=2:31)->cell_marker_intensity
+
+cell_marker_intensity<-rbind(raw_data_subclusters[1:30]%>%aggregate(by=list(all_combined$cluster), FUN=median)%>%pivot_longer(cols=2:31), cell_marker_intensity)
+
+cell_marker_intensity$Group.1<-factor(cell_marker_intensity$Group.1, levels=rev(c("T-cells", "B-cells", "myeloid cells", "NK-cells","stem cells", 
+                                                                                  "ILC2",
+                                                                                  "T9", "T3", "T8", "T7", "T12", "T1", "T11", "T2", "T13", "T5", 
+                                                                                  "T10","T4", "T6", "T14", 
+                                                                                  "B9", "B3", "B10", "B4", "B6", "B7", "B8", "B1", "B2", "B5",
+                                                                                  "M4", "M10", "M3", "M7", "M9", "M2", "M8", "M6", "M1", "M5",
+                                                                                  "NK4", "NK5", "NK3", "NK1", "NK2",
+                                                                                  "ST1", "ST2", "ST3",
+                                                                                  "others")))
+
+t_cells<-c("T9", "T3", "T8", "T7", "T12", "T1", "T11", "T2", "T13", "T5", "T10","T4", "T6", "T14")
+b_cells<-c("B9", "B3", "B10", "B4", "B6", "B7", "B8", "B1", "B2", "B5")
+nk_cells<-c("NK4", "NK5", "NK3", "NK1", "NK2")
+myl_cells<-c("M4", "M10", "M3", "M7", "M9", "M2", "M8", "M6", "M1", "M5")
+st_cells<-c("ST1", "ST2", "ST3")
+
+mct_marker<-c("CD3", "CD19", "CD14", "CD11c", "CD56", "CD25", "CD45RO", "CD34")
+  t_marker<-c("CD3", "CD4", "CD8a", "CD27", "CD45RA", "CD45RO", "CD183", "gd_TCR", "CD25", "FoxP3", "IL_17A", "CD115")
+  b_marker<-c("CD19", "CD27", "CD38", "IgD", "IgM", "HLA_DR", "CD183", "CD124", "CD86")
+  nk_marker<-c("CD45RA", "CD16", "CD56", "CD8a")
+  myl_marker<-c("CD11b", "CD86", "CD183", "CD163", "CD15", "CD115", "CLEC12A", "CD124", "CD80", "CD64")
+  st_marker<-c("CD34", "CD124", "CD183", "CD86", "CD11b", "gd_TCR")
+  
+cell_marker_intensity$value[cell_marker_intensity$Group.1%in%c("T-cells", "B-cells", "myeloid cells", "NK-cells","stem cells", 
+                                                                                  "ILC2")&!cell_marker_intensity$name%in%mct_marker]<-NA
+cell_marker_intensity$value[cell_marker_intensity$Group.1%in%t_cells&!cell_marker_intensity$name%in%t_marker]<-NA
+cell_marker_intensity$value[cell_marker_intensity$Group.1%in%b_cells&!cell_marker_intensity$name%in%b_marker]<-NA
+cell_marker_intensity$value[cell_marker_intensity$Group.1%in%nk_cells&!cell_marker_intensity$name%in%nk_marker]<-NA
+cell_marker_intensity$value[cell_marker_intensity$Group.1%in%myl_cells&!cell_marker_intensity$name%in%myl_marker]<-NA
+cell_marker_intensity$value[cell_marker_intensity$Group.1%in%st_cells&!cell_marker_intensity$name%in%st_marker]<-NA
+ 
+cell_marker_intensity$name<-factor(cell_marker_intensity$name, levels=c("CD3", "CD19", "CD14", "CD11c", "CD56", "CD34",  "CD25", "CD4", "CD8a", "FoxP3" ))
+
+#scale_values <- function(x){(x-min(x))/(max(x)-min(x))}
+
+#cell_marker_intensity<-cell_marker_intensity%>%group_by(name)%>%mutate("scaled"=scale_values(value))
+
+ggplot(cell_marker_intensity, aes(y = Group.1, x = name, fill = value)) +
+  geom_tile(color = "#466399", size = 0.2, na.rm = TRUE) +  # hide NAs
+  scale_fill_viridis_c(na.value = "white", name = "Normalized marker intensity") +
+  theme_minimal(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank()
+  ) +
+  labs(x = "Markers", y = "Cell types")
+
+
+```
+
+```{r Barblots Figure 2 + 3 DONE}
+#stacked barplots
+all_combined <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/all_combined_new_3.rds")
+all_combined$cluster<-as.character(all_combined$cluster)
+all_combined$cluster[all_combined$cluster=="myeloid cells"]<-"MC"
+all_combined$cluster[all_combined$cluster=="NK-cells"]<-"NKC"
+all_combined$cluster[all_combined$cluster=="stem cells"]<-"SC"
+all_combined$cluster[all_combined$cluster=="B-cells"]<-"BC"
+all_combined$cluster[all_combined$cluster=="T-cells"]<-"TC"
+all_combined$cluster[all_combined$cluster=="others"]<-"MN"
+all_combined$cluster<-factor(as.character(all_combined$cluster), levels= c("TC","BC", "ILC2", "MC","NKC", "SC", "MN"))
+all_combined$timepoint[all_combined$timepoint=="0d"]<-"Preterm"
+
+
+all_combined$timepoint[all_combined$timepoint=="28d"]<-"TP2"
+all_combined$timepoint[all_combined$timepoint=="365d"]<-"TP3"
+
+all_combined$blood_type<-rep(1, nrow(all_combined))
+all_combined$blood_type[all_combined$group=="CB"]<-0
+all_combined$blood_type[all_combined$chip%in%metadata$chip_id[metadata$timepoint_cat==1&metadata$blood_type_d0==0]]<-0
+all_combined$timepoint[all_combined$timepoint=="Preterm"&all_combined$blood_type==0]<-"TP1c"
+all_combined$timepoint[all_combined$timepoint=="Preterm"]<-"TP1p"
+
+#only PB
+#metadata$chip_id[metadata$timepoint_cat==1&metadata$blood_type_d0==0]->tmp
+#all_combined[!all_combined$chip%in%tmp,]->all_combined
+
+#only CB
+#metadata$chip_id[metadata$timepoint_cat==1&metadata$blood_type_d0==1]->tmp
+#all_combined[!all_combined$chip%in%tmp,]->all_combined
+
+source("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/stacked_barplots.R", echo=TRUE)
+
+all_combined$timepoint[all_combined$timepoint=="TP1c"]<-"Preterm"                 
+          
+stacked_barplots(all_combined[all_combined$timepoint!="TP2"&all_combined$timepoint!="TP3"&all_combined$timepoint!="TP1p",], 
+                 title="Main cell types", order=c("P", "T", "A"), 
+                 cluster=all_combined[all_combined$timepoint!="TP3"&all_combined$timepoint!="TP2"&all_combined$timepoint!="TP1p",]$cluster, 
+                 filename="Fig2_maincells_PTA_stackedplot.tiff", 
+                 color=c("#3399ff", "#ff3366", "#AE70A8", "#ff6633", "#ffcc33", "#33cc99", "grey"), ylab="% of MNC")
+
+
+
+all_combined$timepoint[all_combined$timepoint=="Preterm"]<-"TP1c"
+
+stacked_barplots(all_combined[all_combined$timepoint!="AB"&all_combined$timepoint!="CB",], 
+                 title="Main cell types", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=all_combined[all_combined$timepoint!="AB"&all_combined$timepoint!="CB",]$cluster, 
+                 filename="Fig3_maincells_TP1cTP1TP2TP3_stackedplot.tiff", 
+                 color=c("#3399ff", "#ff3366", "#AE70A8", "#ff6633", "#ffcc33", "#33cc99", "grey"), ylab="% of MNC", subscript = TRUE)
+
+
+subdata<-all_combined[all_combined$cluster=="TC",]
+
+subdata$subcluster<-factor(as.character(subdata$subcluster), 
+                           levels = unique(subdata$subcluster)[ order(as.numeric(stringr::str_remove(unique(subdata$subcluster), "T") ))])
+
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="T cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3b_Tcells_stackedplot_TP1c.tiff", ylab="% of T cells", subscript = TRUE)
+
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="T cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3_Tcells_stackedplot_TP1c.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("TP1c"= nrow(all_combined[all_combined$timepoint=="TP1c",]), "TP1p"=nrow(all_combined[all_combined$timepoint=="TP1p",]), "TP2"=nrow(all_combined[all_combined$timepoint=="TP2",]), "TP3"=nrow(all_combined[all_combined$timepoint=="TP3",])), ylab="% of MNC", subscript = TRUE)
+
+
+subdata$timepoint[subdata$timepoint=="TP1c"]<-"Preterm"
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="T cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2b_Tcells_stackedplot.tiff", ylab="% of T cells")
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="T cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2_Tcells_stackedplot.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("Term"=nrow(all_combined[all_combined$timepoint=="CB",]), "Preterm"=nrow(all_combined[all_combined$timepoint=="TP1c",]), "Adult"=nrow(all_combined[all_combined$timepoint=="AB",])), ylab="% of MNC")
+
+subdata$timepoint[subdata$timepoint=="Preterm"]<-"TP1c"
+
+#next celltype
+
+
+subdata<-all_combined[all_combined$cluster=="BC",]
+subdata$subcluster<-factor(as.character(subdata$subcluster), 
+                           levels = unique(subdata$subcluster)[ order(as.numeric(stringr::str_remove(unique(subdata$subcluster), "B") ))])
+
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="B cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3b_Bcells_stackedplot_TP1c.tiff", ylab="% of B cells", subscript = TRUE)
+
+
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="B cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3_Bcells_stackedplot_TP1c.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("TP1c"=nrow(all_combined[all_combined$timepoint=="TP1c",]), "TP1p"=nrow(all_combined[all_combined$timepoint=="TP1p",]), "TP2"=nrow(all_combined[all_combined$timepoint=="TP2",]), "TP3"=nrow(all_combined[all_combined$timepoint=="TP3",])), ylab="% of MNC", subscript = TRUE)
+
+
+subdata$timepoint[subdata$timepoint=="TP1c"]<-"Preterm"
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="B cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2b_Bcells_stackedplot.tiff", ylab="% of B cells")
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="B cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2_Bcells_stackedplot.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("Term"=nrow(all_combined[all_combined$timepoint=="CB",]), "Preterm"=nrow(all_combined[all_combined$timepoint=="TP1c",]), "Adult"=nrow(all_combined[all_combined$timepoint=="AB",])), ylab="% of MNC")
+
+subdata$timepoint[subdata$timepoint=="Preterm"]<-"TP1c"
+
+#next celltype
+
+
+subdata<-all_combined[all_combined$cluster=="NKC",]
+subdata$subcluster<-factor(as.character(subdata$subcluster), 
+                           levels = unique(subdata$subcluster)[ order(as.numeric(stringr::str_remove(unique(subdata$subcluster), "NK") ))])
+
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="NK cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3b_NKcells_stackedplot_TP1c.tiff", ylab="% of NK cells", subscript = TRUE)
+
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="NK cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3_NKcells_stackedplot_TP1c.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("TP1c"=nrow(all_combined[all_combined$timepoint=="TP1c",]), "TP1p"=nrow(all_combined[all_combined$timepoint=="TP1p",]), "TP2"=nrow(all_combined[all_combined$timepoint=="TP2",]), "TP3"=nrow(all_combined[all_combined$timepoint=="TP3",])), ylab="% of MNC", subscript = TRUE)
+
+
+subdata$timepoint[subdata$timepoint=="TP1c"]<-"Preterm"
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="NK cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2b_NKcells_stackedplot.tiff", ylab="% of NK cells")
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="NK cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2_NKcells_stackedplot.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("Term"=nrow(all_combined[all_combined$timepoint=="CB",]), "Preterm"=nrow(all_combined[all_combined$timepoint=="TP1c",]), "Adult"=nrow(all_combined[all_combined$timepoint=="AB",])), ylab="% of MNC")
+
+subdata$timepoint[subdata$timepoint=="Preterm"]<-"TP1c"
+
+#next celltype
+
+
+subdata<-all_combined[all_combined$cluster=="MC",]
+subdata$subcluster<-factor(as.character(subdata$subcluster), 
+                           levels = unique(subdata$subcluster)[ order(as.numeric(stringr::str_remove(unique(subdata$subcluster), "M") ))])
+
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="Myeloid cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3b_myeloidcells_stackedplot_TP1c.tiff", ylab="% of Myeloid cells", subscript = TRUE)
+
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="Myeloid cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3_myeloidcells_stackedplot_TP1c.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("TP1c"=nrow(all_combined[all_combined$timepoint=="TP1c",]), "TP1p"=nrow(all_combined[all_combined$timepoint=="TP1p",]), "TP2"=nrow(all_combined[all_combined$timepoint=="TP2",]), "TP3"=nrow(all_combined[all_combined$timepoint=="TP3",])), ylab="% of MNC", subscript = TRUE)
+
+
+subdata$timepoint[subdata$timepoint=="TP1c"]<-"Preterm"
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="Myeloid cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2b_myeloidcells_stackedplot.tiff", ylab="% of Myeloid cells")
+
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="Myeloid cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2_myeloidcells_stackedplot.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("Term"=nrow(all_combined[all_combined$timepoint=="CB",]), "Preterm"=nrow(all_combined[all_combined$timepoint=="TP1c",]), "Adult"=nrow(all_combined[all_combined$timepoint=="AB",])), ylab="% of MNC")
+
+subdata$timepoint[subdata$timepoint=="Preterm"]<-"TP1c"
+
+#next celltype
+
+subdata<-all_combined[all_combined$cluster=="SC",]
+subdata$subcluster<-factor(as.character(subdata$subcluster), 
+                           levels = unique(subdata$subcluster)[ order(as.numeric(stringr::str_remove(unique(subdata$subcluster), "ST") ))])
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="Stem cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3b_stemcells_stackedplot_TP1c.tiff", ylab="% of Stem cells", subscript = TRUE)
+
+
+
+stacked_barplots(subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",], 
+                 title="Stem cells", order=c("TP1c", "TP1p", "TP2", "TP3"), 
+                 cluster=subdata[subdata$timepoint!="AB"&subdata$timepoint!="CB",]$subcluster, 
+                 filename="Fig3_stemcells_stackedplot_TP1c.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("TP1c"=nrow(all_combined[all_combined$timepoint=="TP1c",]), "TP1p"=nrow(all_combined[all_combined$timepoint=="TP1p",]), "TP2"=nrow(all_combined[all_combined$timepoint=="TP2",]), "TP3"=nrow(all_combined[all_combined$timepoint=="TP3",])), ylab="% of MNC", subscript = TRUE)
+
+
+
+
+subdata$timepoint[subdata$timepoint=="TP1c"]<-"Preterm"
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="Stem cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2b_stemcells_stackedplot.tiff", ylab="% of Stem cells")
+
+stacked_barplots(subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",], 
+                 title="Stem cells", order=c("P", "T", "A"), 
+                 cluster=subdata[subdata$timepoint!="TP2"&subdata$timepoint!="TP3"&subdata$timepoint!="TP1p",]$subcluster, 
+                 filename="Fig2_stemcells_stackedplot.tiff",
+                 relative_to = "pbmc",
+                 ncells=c("Term"=nrow(all_combined[all_combined$timepoint=="CB",]), "Preterm"=nrow(all_combined[all_combined$timepoint=="TP1c",]), "Adult"=nrow(all_combined[all_combined$timepoint=="AB",])), ylab="% of MNC")
+
+subdata$timepoint[subdata$timepoint=="Preterm"]<-"TP1c"
+
+
+```
+
+
+```{r Density Plots Figure 2+3 DONE}
+#cluster outlline function
+ outlines<-function(umap, data, plot){
+   
+  df <- data.frame(
+  UMAP1 = umap$V1,
+  UMAP2 = umap$V2,
+  Cluster = data$subcluster
+)
+
+cluster_centers <- df %>%
+  group_by(Cluster) %>%
+  summarise(
+    center_UMAP1 = median(UMAP1),
+    center_UMAP2 = median(UMAP2)
+  )
+
+   #calculate distance from center
+df$diff.x<-rep(NA, nrow(df))
+df$diff.y<-rep(NA, nrow(df))
+
+for(i in cluster_centers$Cluster){
+  df$diff.x[df$Cluster==i]<-df$UMAP1[df$Cluster==i]-cluster_centers$center_UMAP1[cluster_centers$Cluster==i]
+  df$diff.y[df$Cluster==i]<-df$UMAP2[df$Cluster==i]-cluster_centers$center_UMAP2[cluster_centers$Cluster==i]
+}
+
+df$dist<-sqrt(df$diff.x^2+df$diff.y^2)
+
+#calculate density
+df$density<-rep(NA, nrow(df))
+for(i in unique(df$Cluster)){
+  df$density[df$Cluster==i]<-get_density_scaled(df$UMAP1[df$Cluster==i], df$UMAP2[df$Cluster==i], n=1000)
+}
+
+#combine
+df$dist.penalty<-df$dist*(1/df$density)
+
+df$cutoff<-rep(NA, nrow(df))
+for(i in cluster_centers$Cluster){
+  quantile(sort(df$dist.penalty[df$Cluster==i]), probs=c(0.7))->tmp
+  df$cutoff[df$Cluster==i]<-df$dist.penalty[df$Cluster==i]<tmp
+  
+}
+
+df_reduced<-df[df$cutoff==TRUE,]
+
+
+plot+ggnewscale::new_scale_color()+
+  ggforce::geom_mark_hull(data=df_reduced, aes(UMAP1, UMAP2, color = Cluster), linewidth=1, expand = unit(2.5, "mm"), radius = unit(3, "mm"), concavity = 1, key_glyph="point", show.legend = FALSE)+
+  scale_color_manual(values=color_clusters)+
+  guides(color = guide_legend(override.aes = list(size = 5, alpha = 1)))->output
+
+return(output)
+  
+ }
+
+
+scaleFUN <- function(x) sprintf("%.1f", x)
+
+#density plots
+
+metadata$chip_id[metadata$blood_type_d0==0]->CB_chips
+
+source("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/density_functions_and_test.R", echo=TRUE)
+
+umap<-as.data.frame(umap_main_cell_type_detection$embedding)
+umap$timepoint<-main_cell_type_detection_data$timepoint
+ umap$timepoint[umap$timepoint=="CB"]<-"T"
+ umap$timepoint[umap$timepoint=="AB"]<-"A"
+  umap$timepoint[umap$timepoint=="0d"]<-"TP1[P]"
+  umap$timepoint[umap$timepoint=="28d"]<-"TP2"
+  umap$timepoint[umap$timepoint=="365d"]<-"TP3"
+  
+  umap$timepoint[umap$timepoint=="TP1[P]"&main_cell_type_detection_data$chip%in%CB_chips]<-"TP1[C]"
+  
+ umap$timepoint<-factor(as.character(umap$timepoint), level=c("T", "TP1[C]", "TP1[P]", "TP2", "TP3", "A"))
+ 
+ umap%>%group_by(timepoint)%>%mutate("density"=get_density_scaled(V1, V2, n=1000))->umap
+ 
+ data<-umap[umap$timepoint%in%c("TP1[C]", "TP1[P]", "TP2", "TP3"),]
+ data$timepoint<-factor(as.character(data$timepoint))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, labeller = label_parsed, nrow=1)+
+  xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+        axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+tiff(filename="Fig3_MCT_density.tiff", compression = "lzw", width = 36, height=14, units = "cm", res=216)
+plot(p)
+dev.off()
+
+#p<-outlines(umap=umap, data=t_equal, plot=p)
+
+#tiff(filename="Fig3_tcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+
+umap$timepoint<-as.character(umap$timepoint)
+umap$timepoint[umap$timepoint=="TP1[C]"]<-"P"
+
+umap$timepoint<-factor(as.character(umap$timepoint), level=c("P", "T", "A", "TP2", "TP3", "TP1[P]"))
+
+ data<-umap[umap$timepoint%in%c("P", "T", "A"),]
+ data$timepoint<-factor(as.character(data$timepoint), levels = c("P", "T", "A"))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+ tiff(filename="Fig2_MCT_density.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+ plot(p)
+dev.off()
+
+#p<-outlines(umap=umap, data=t_equal, plot=p)
+
+#tiff(filename="Fig2_tcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+
+umap<-as.data.frame(umap_t_equal$embedding)
+umap$timepoint<-t_equal$timepoint
+ umap$timepoint[umap$timepoint=="CB"]<-"T"
+ umap$timepoint[umap$timepoint=="AB"]<-"A"
+  umap$timepoint[umap$timepoint=="0d"]<-"TP1[P]"
+  umap$timepoint[umap$timepoint=="28d"]<-"TP2"
+  umap$timepoint[umap$timepoint=="365d"]<-"TP3"
+  
+  umap$timepoint[umap$timepoint=="TP1[P]"&t_equal$chip%in%CB_chips]<-"TP1[C]"
+  
+ umap$timepoint<-factor(as.character(umap$timepoint), level=c("T", "TP1[C]", "TP1[P]", "TP2", "TP3", "A"))
+ 
+ umap%>%group_by(timepoint)%>%mutate("density"=get_density_scaled(V1, V2, n=1000))->umap
+ 
+ data<-umap[umap$timepoint%in%c("TP1[C]", "TP1[P]", "TP2", "TP3"),]
+ data$timepoint<-factor(as.character(data$timepoint))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, labeller = label_parsed, nrow=1)+
+  xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+        axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+tiff(filename="Fig3_tcells_density.tiff", compression = "lzw", width = 36, height=14, units = "cm", res=216)
+plot(p)
+dev.off()
+
+#p<-outlines(umap=umap, data=t_equal, plot=p)
+
+#tiff(filename="Fig3_tcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap$timepoint<-as.character(umap$timepoint)
+umap$timepoint[umap$timepoint=="TP1[C]"]<-"P"
+
+umap$timepoint<-factor(as.character(umap$timepoint), level=c("P", "T", "A", "TP2", "TP3", "TP1[P]"))
+
+ data<-umap[umap$timepoint%in%c("P", "T", "A"),]
+ data$timepoint<-factor(as.character(data$timepoint), levels = c("P", "T", "A"))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+ tiff(filename="Fig2_tcells_density.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+ plot(p)
+dev.off()
+
+#p<-outlines(umap=umap, data=t_equal, plot=p)
+
+#tiff(filename="Fig2_tcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap<-as.data.frame(umap_b_equal$embedding)
+umap$timepoint<-b_equal$timepoint
+
+
+ umap$timepoint[umap$timepoint=="CB"]<-"T"
+ umap$timepoint[umap$timepoint=="AB"]<-"A"
+  umap$timepoint[umap$timepoint=="0d"]<-"TP1[P]"
+  umap$timepoint[umap$timepoint=="28d"]<-"TP2"
+  umap$timepoint[umap$timepoint=="365d"]<-"TP3"
+  
+
+  umap$timepoint[umap$timepoint=="TP1[P]"&b_equal$chip%in%CB_chips]<-"TP1[C]"
+  
+ umap$timepoint<-factor(as.character(umap$timepoint), level=c("T", "TP1[C]", "TP1[P]", "TP2", "TP3", "A"))
+ 
+ umap%>%group_by(timepoint)%>%mutate("density"=get_density_scaled(V1, V2, n=1000))->umap
+ 
+ data<-umap[umap$timepoint%in%c("TP1[C]", "TP1[P]", "TP2", "TP3"),]
+ data$timepoint<-factor(as.character(data$timepoint))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, labeller = label_parsed, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+ tiff(filename="Fig3_bcells_density.tiff", compression = "lzw", width = 36, height=14, units = "cm", res=216)
+ plot(p)
+dev.off()
+
+#p<-outlines(umap=umap, data=b_equal, plot=p)
+
+#tiff(filename="Fig3_bcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap$timepoint<-as.character(umap$timepoint)
+umap$timepoint[umap$timepoint=="TP1[C]"]<-"P"
+
+umap$timepoint<-factor(as.character(umap$timepoint), level=c("P", "T", "A", "TP2", "TP3", "TP1[P]"))
+
+ data<-umap[umap$timepoint%in%c("P", "T", "A"),]
+ data$timepoint<-factor(as.character(data$timepoint), levels = c("P", "T", "A"))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+ tiff(filename="Fig2_bcells_density.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+ plot(p)
+dev.off()
+
+#p<-outlines(umap=umap, data=b_equal, plot=p)
+
+#tiff(filename="Fig2_bcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap<-as.data.frame(umap_nk_equal$embedding)
+umap$timepoint<-nk_equal$timepoint
+
+
+ umap$timepoint[umap$timepoint=="CB"]<-"T"
+ umap$timepoint[umap$timepoint=="AB"]<-"A"
+  umap$timepoint[umap$timepoint=="0d"]<-"TP1[P]"
+  umap$timepoint[umap$timepoint=="28d"]<-"TP2"
+  umap$timepoint[umap$timepoint=="365d"]<-"TP3"
+  
+  umap$timepoint[umap$timepoint=="TP1[P]"&nk_equal$chip%in%CB_chips]<-"TP1[C]"
+  
+ umap$timepoint<-factor(as.character(umap$timepoint), level=c("T", "TP1[C]", "TP1[P]", "TP2", "TP3", "A"))
+ 
+ umap%>%group_by(timepoint)%>%mutate("density"=get_density_scaled(V1, V2, n=1000))->umap
+ 
+ data<-umap[umap$timepoint%in%c("TP1[C]", "TP1[P]", "TP2", "TP3"),]
+ data$timepoint<-factor(as.character(data$timepoint))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, labeller = label_parsed, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+ tiff(filename="Fig3_nkcells_density.tiff", compression = "lzw", width = 36, height=14, units = "cm", res=216)
+plot(p)
+ dev.off()
+ 
+ #p<-outlines(umap=umap, data=nk_equal, plot=p)
+
+#tiff(filename="Fig3_nkcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap$timepoint<-as.character(umap$timepoint)
+umap$timepoint[umap$timepoint=="TP1[C]"]<-"P"
+
+umap$timepoint<-factor(as.character(umap$timepoint), level=c("P", "T", "A", "TP2", "TP3", "TP1[P]"))
+
+ data<-umap[umap$timepoint%in%c("P", "T", "A"),]
+ data$timepoint<-factor(as.character(data$timepoint), levels = c("P", "T", "A"))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+ tiff(filename="Fig2_nkcells_density.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+plot(p)
+dev.off()
+
+# p<-outlines(umap=umap, data=nk_equal, plot=p)
+
+#tiff(filename="Fig2_nkcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap<-as.data.frame(umap_myeloid_equal$embedding)
+umap$timepoint<-myeloid_equal$timepoint
+
+
+ umap$timepoint[umap$timepoint=="CB"]<-"T"
+ umap$timepoint[umap$timepoint=="AB"]<-"A"
+  umap$timepoint[umap$timepoint=="0d"]<-"TP1[P]"
+  umap$timepoint[umap$timepoint=="28d"]<-"TP2"
+  umap$timepoint[umap$timepoint=="365d"]<-"TP3"
+
+    umap$timepoint[umap$timepoint=="TP1[P]"&myeloid_equal$chip%in%CB_chips]<-"TP1[C]"
+  
+ umap$timepoint<-factor(as.character(umap$timepoint), level=c("T", "TP1[C]", "TP1[P]", "TP2", "TP3", "A"))
+ 
+ umap%>%group_by(timepoint)%>%mutate("density"=get_density_scaled(V1, V2, n=1000))->umap
+ 
+ data<-umap[umap$timepoint%in%c("TP1[C]", "TP1[P]", "TP2", "TP3"),]
+ data$timepoint<-factor(as.character(data$timepoint))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+ 
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, labeller = label_parsed, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+tiff(filename="Fig3_myeloidcells_density.tiff", compression = "lzw", width = 36, height=14, units = "cm", res=216)
+plot(p)
+dev.off()
+
+# p<-outlines(umap=umap, data=myeloid_equal, plot=p)
+
+#tiff(filename="Fig3_myeloidcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap$timepoint<-as.character(umap$timepoint)
+umap$timepoint[umap$timepoint=="TP1[C]"]<-"P"
+
+umap$timepoint<-factor(as.character(umap$timepoint), level=c("P", "T", "A", "TP2", "TP3", "TP1[P]"))
+
+ data<-umap[umap$timepoint%in%c("P", "T", "A"),]
+ data$timepoint<-factor(as.character(data$timepoint), levels = c("P", "T", "A"))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title =element_text(size=25))->p
+
+tiff(filename="Fig2_myeloidcells_density.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+plot(p)
+dev.off()
+
+# p<-outlines(umap=umap, data=myeloid_equal, plot=p)
+
+#tiff(filename="Fig2_myeloidcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap<-as.data.frame(umap_stem$embedding)
+umap$timepoint<-all_stem$timepoint
+
+
+ umap$timepoint[umap$timepoint=="CB"]<-"T"
+ umap$timepoint[umap$timepoint=="AB"]<-"A"
+  umap$timepoint[umap$timepoint=="0d"]<-"TP1[P]"
+  umap$timepoint[umap$timepoint=="28d"]<-"TP2"
+  umap$timepoint[umap$timepoint=="365d"]<-"TP3"
+
+  umap$timepoint[umap$timepoint=="TP1[P]"&all_stem$chip%in%CB_chips]<-"TP1[C]"
+  
+ umap$timepoint<-factor(as.character(umap$timepoint), level=c("T", "TP1[C]", "TP1[P]", "TP2", "TP3", "A"))
+ 
+ umap%>%group_by(timepoint)%>%mutate("density"=get_density_scaled(V1, V2, n=1000))->umap
+ 
+ data<-umap[umap$timepoint%in%c("TP1[C]", "TP1[P]", "TP2", "TP3"),]
+ data$timepoint<-factor(as.character(data$timepoint))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.2) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, labeller = label_parsed, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+tiff(filename="Fig3_stemcells_density.tiff", compression = "lzw", width = 36, height=14, units = "cm", res=216)
+plot(p)
+dev.off()
+
+# p<-outlines(umap=umap, data=all_stem, plot=p)
+
+#tiff(filename="Fig3_stemcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap$timepoint<-as.character(umap$timepoint)
+umap$timepoint[umap$timepoint=="TP1[C]"]<-"P"
+
+umap$timepoint<-factor(as.character(umap$timepoint), level=c("P", "T", "A", "TP2", "TP3", "TP1[P]"))
+
+ data<-umap[umap$timepoint%in%c("P", "T", "A"),]
+ data$timepoint<-factor(as.character(data$timepoint), levels = c("P", "T", "A"))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+ 
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.5) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint, nrow=1)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+tiff(filename="Fig2_stemcells_density.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+plot(p)
+dev.off()
+
+# p<-outlines(umap=umap, data=all_stem, plot=p)
+
+#tiff(filename="Fig2_stemcells_density_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+if(FALSE){
+umap<-as.data.frame(umap_stem_equal$embedding)
+umap$timepoint<-stem_equal$timepoint
+
+
+ umap$timepoint[umap$timepoint=="CB"]<-"T"
+ umap$timepoint[umap$timepoint=="AB"]<-"A"
+  umap$timepoint[umap$timepoint=="0d"]<-"TP1p"
+  umap$timepoint[umap$timepoint=="28d"]<-"TP2"
+  umap$timepoint[umap$timepoint=="365d"]<-"TP3"
+
+    umap$timepoint[umap$timepoint=="TP1p"&t_equal$chip%in%CB_chips]<-"TP1c"
+  
+ umap$timepoint<-factor(as.character(umap$timepoint), level=c("T", "TP1c", "TP1p", "TP2", "TP3", "A"))
+ 
+ umap%>%group_by(timepoint)%>%mutate("density"=get_density_scaled(V1, V2, n=1000))->umap
+ 
+ data<-umap[umap$timepoint%in%c("TP1p", "TP2", "TP3"),]
+ data$timepoint<-factor(as.character(data$timepoint))
+ data <- data %>% group_by(timepoint) %>% slice_sample(n=min(table(data$timepoint)))
+
+ggplot(data,  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.1) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+tiff(filename="Fig3_stemcells_density_equal_sampling.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+plot(p)
+dev.off()
+
+ #p<-outlines(umap=umap, data=stem_equal, plot=p)
+
+#tiff(filename="Fig3_stemcells_density_equal_sampling_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+
+umap$timepoint<-as.character(umap$timepoint)
+umap$timepoint[umap$timepoint=="TP1"]<-"P"
+
+umap$timepoint<-factor(as.character(umap$timepoint), level=c("P", "T", "A", "TP2", "TP3"))
+
+ggplot(umap[umap$timepoint%in%c("P", "T", "A"),],  aes(x = V1, y = V2, color = density)) +
+  geom_point(size = 0.1) +
+  theme_classic() +
+  labs(color="Density")+
+  scale_color_viridis_c()+
+  facet_wrap(~timepoint)+
+    xlab("UMAP1")+
+  ylab("UMAP2")+
+  scale_y_continuous(labels=scaleFUN) +
+  theme(strip.text =element_text(size=30),
+        legend.text = element_text(size=20),
+        legend.title = element_text(size=20, vjust=2),
+                axis.text=element_text(size=23),
+        strip.background = element_blank(),
+        axis.title = element_text(size=25))->p
+
+tiff(filename="Fig2_stemcells_density_equal_sampling.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+plot(p)
+dev.off()
+
+# p<-outlines(umap=umap, data=stem_equal, plot=p)
+
+#tiff(filename="Fig2_stemcells_density_equal_sampling_outlines.tiff", compression = "lzw", width = 32, height=14, units = "cm", res=216)
+#plot(p)
+#dev.off()
+}
+
+```
+
+
+```{r effect sizes figure 2+3 DONE}
+
+source("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/effect_size_plots_new.R", echo=TRUE)
+
+freq_main_all$group<-rep(1, nrow(freq_main_all))
+freq_main_all$group[grepl("CB", freq_main_all$chip)]<-2
+freq_main_all$group[grepl("AB", freq_main_all$chip)]<-3
+freq_main_all$group<-as.numeric(freq_main_all$group)
+freq_main_all$timepoint<-metadata$timepoint_cat[match(freq_main_all$chip, metadata$chip_id)]
+freq_main_all$timepoint[freq_main_all$group%in%c(2,3)]<-4
+
+freq_main_all$blood_type<-rep(1, nrow(freq_main_all))
+freq_main_all$blood_type[freq_main_all$group=="CB"]<-0
+freq_main_all$blood_type[freq_main_all$chip%in%metadata$chip_id[metadata$timepoint_cat==1&metadata$blood_type_d0==0]]<-0
+freq_main_all$timepoint[freq_main_all$timepoint=="1"&freq_main_all$blood_type==1]<-"1.5"
+freq_main_all<-freq_main_all[freq_main_all$timepoint!=2&freq_main_all$timepoint!=3&freq_main_all$timepoint!=1.5,]
+
+freq_all$group<-rep(1, nrow(freq_all))
+freq_all$group[grepl("AB", freq_all$chip)]<-3
+freq_all$group[grepl("CB", freq_all$chip)]<-2
+freq_all$timepoint<-metadata$timepoint_cat[match(freq_all$chip, metadata$chip_id)]
+freq_all$timepoint[freq_all$group%in%c(2,3)]<-4
+freq_all<-freq_all[freq_all$timepoint!=2&freq_all$timepoint!=3,]
+
+freq_all$blood_type<-rep(1, nrow(freq_all))
+freq_all$blood_type[freq_all$group=="CB"]<-0
+freq_all$blood_type[freq_all$chip%in%metadata$chip_id[metadata$timepoint_cat==1&metadata$blood_type_d0==0]]<-0
+freq_all$timepoint[freq_all$timepoint=="1"&freq_all$blood_type==1]<-"1.5"
+freq_all<-freq_all[freq_all$timepoint!=2&freq_all$timepoint!=3&freq_all$timepoint!=1.5,]
+
+logistic=FALSE
+
+#effectsize on PTA of PBMC (Figure 2)
+as.data.frame(as.numeric(freq_all$group))->metaMat
+colnames(metaMat)<-"Age"
+  
+
+fastDummies::dummy_columns(metaMat)->dummies
+
+#heatmap
+featureMat1 = as.data.frame(freq_all[1:44][dummies$Age_3!=1,])
+metaMat1 = as.data.frame(dummies$Age_2[dummies$Age_3!=1])
+colnames(metaMat1)<-"Age"
+featureMat1$timepoints<-rep("T vs P")
+
+
+featureMat2 = as.data.frame(freq_all[1:44][dummies$Age_1!=1,])
+metaMat2 = as.data.frame(dummies$Age_3[dummies$Age_1!=1])
+colnames(metaMat2)<-"Age"
+featureMat2$timepoints<-rep("A vs T")
+
+
+featureMat3 = as.data.frame(freq_all[1:44][dummies$Age_2!=1,])
+metaMat3 = as.data.frame(dummies$Age_3[dummies$Age_2!=1])
+colnames(metaMat3)<-"Age"
+featureMat3$timepoints<-rep("A vs P")
+
+
+metaMat<-rbind(metaMat1, metaMat2)
+featureMat<-rbind(featureMat1, featureMat2)
+
+groups<-list("descending_late"=c("B1", "B5", "M1", "M6", "M7", "M9", "NK1", "NK3"),
+             "descending_early"=c("T4", "T13", "B2", "B3", "M3", "NK2", "NK4", "ST2"),
+             "ascending_late"=c("T1", "T2", "T5", "T6", "T8", "T9", "T10", "T14", "B6", "B8", "B9", "NK5"),
+             "ascending_early"=c("T11", "M8"),
+             "hill"=c("T7", "T12", "B4", "B7", "B10", "ILC2", "M2", "M5", "M10", "ST3"),
+             "valley"=c("T3", "M4", "ST1"))
+
+eff_size_heatmap(metaMat=metaMat, featureMat=as.data.frame(featureMat[1:44]), logistic = FALSE, filename="Fig2_effsizes_heatmap_scale_mean.tiff", q_cutoff = NA, timepoints = featureMat$timepoints, order=c("T vs P", "A vs T"), width=13, legend_breaks = c(-0.8, -0.5,0,0.5,0.8), overall_effect = "scale", overall_effect_function = "mean", signif_only=FALSE, label_angel=45, hjust=1, vjust=1)
+
+#effectsize on PTA of MCT (Figure 2b)
+as.data.frame(as.numeric(freq_main_all$group))->metaMat
+colnames(metaMat)<-"Age"
+
+fastDummies::dummy_columns(metaMat)->dummies
+
+#heatmap
+featureMat1 = as.data.frame(freq_main_all[1:42][dummies$Age_3!=1,])
+metaMat1 = as.data.frame(dummies$Age_2[dummies$Age_3!=1])
+colnames(metaMat1)<-"Age"
+featureMat1$timepoints<-rep("T vs P")
+
+
+featureMat2 = as.data.frame(freq_main_all[1:42][dummies$Age_1!=1,])
+metaMat2 = as.data.frame(dummies$Age_3[dummies$Age_1!=1])
+colnames(metaMat2)<-"Age"
+featureMat2$timepoints<-rep("A vs T")
+
+
+featureMat3 = as.data.frame(freq_main_all[1:42][dummies$Age_2!=1,])
+metaMat3 = as.data.frame(dummies$Age_3[dummies$Age_2!=1])
+colnames(metaMat3)<-"Age"
+featureMat3$timepoints<-rep("A vs P")
+
+
+metaMat<-rbind(metaMat1, metaMat2)
+featureMat<-rbind(featureMat1, featureMat2)
+
+groups<-list("descending_late"=c("B2", "B5", "M1", "M9", "T13", "T3"),
+             "descending_early"=c("T4", "T1", "NK2", "M7", "M3", "B3"),
+             "ascending_late"=c( "T2", "T5", "T6", "T8", "T10", "NK5", "NK4", "B4", "B6", "B8", "B9", "M8"),
+             "ascending_early"=c("M10", "M2", "M5"),
+             "hill"=c("B10", "B1", "M6", "B7", "NK1", "NK3", "T11", "T12", "T7", "ST3", "T9"),
+             "valley"=c("T14", "M4", "ST1", "ST2"))
+
+eff_size_heatmap(metaMat=metaMat, featureMat=as.data.frame(featureMat[1:42]), logistic = FALSE, filename="Fig2b_effsizes_heatmap_scale_mean.tiff", q_cutoff = NA, signif_only = FALSE, timepoints = featureMat$timepoints, order=c("T vs P", "A vs T"), width=13, legend_breaks = c(-0.8, -0.5,0,0.5,0.8), overall_effect = "scale", overall_effect_function = "mean", label_angel = 45, hjust=1, vjust=1)
+
+#effect on timepoint of PBMC (Figure 3)
+freq$blood_type<-rep(1, nrow(freq))
+freq$blood_type[freq$chip%in%metadata$chip_id[metadata$timepoint_cat==1&metadata$blood_type_d0==0]]<-0
+freq$timepoint[freq$timepoint=="1"&freq$blood_type==0]<-"0"
+
+as.data.frame(as.numeric(freq$timepoint))->metaMat
+colnames(metaMat)<-"Age"
+
+
+fastDummies::dummy_columns(metaMat)->dummies
+
+#heatmap
+featureMat1 = as.data.frame(freq[1:44][dummies$Age_2!=1&dummies$Age_1!=1,])
+metaMat1 = as.data.frame(dummies$Age_3[dummies$Age_2!=1&dummies$Age_1!=1])
+colnames(metaMat1)<-"Age"
+featureMat1$timepoints<-rep("TP3\nvs\nTP1c")
+
+featureMat2 = as.data.frame(freq[1:44][dummies$Age_1!=1&dummies$Age_3!=1,])
+metaMat2 = as.data.frame(dummies$Age_2[dummies$Age_1!=1&dummies$Age_3!=1])
+colnames(metaMat2)<-"Age"
+featureMat2$timepoints<-rep("TP2\nvs\nTP1c")
+
+featureMat3 = as.data.frame(freq[1:44][dummies$Age_0!=1&dummies$Age_1!=1,])
+metaMat3 = as.data.frame(dummies$Age_3[dummies$Age_0!=1&dummies$Age_1!=1])
+colnames(metaMat3)<-"Age"
+featureMat3$timepoints<-rep("TP3\nvs\nTP2")
+
+featureMat4 = as.data.frame(freq[1:44][dummies$Age_2!=1&dummies$Age_3!=1,])
+metaMat4 = as.data.frame(dummies$Age_1[dummies$Age_2!=1&dummies$Age_3!=1])
+colnames(metaMat4)<-"Age"
+featureMat4$timepoints<-rep("TP1p\nvs\nTP1c")
+
+featureMat5 = as.data.frame(freq[1:44][dummies$Age_0!=1&dummies$Age_2!=1,])
+metaMat5 = as.data.frame(dummies$Age_3[dummies$Age_0!=1&dummies$Age_2!=1])
+colnames(metaMat5)<-"Age"
+featureMat5$timepoints<-rep("TP3\nvs\nTP1p")
+
+featureMat6 = as.data.frame(freq[1:44][dummies$Age_0!=1&dummies$Age_3!=1,])
+metaMat6 = as.data.frame(dummies$Age_2[dummies$Age_0!=1&dummies$Age_3!=1])
+colnames(metaMat6)<-"Age"
+featureMat6$timepoints<-rep("TP2\nvs\nTP1p")
+
+metaMat<-rbind(metaMat3, metaMat4, metaMat6)
+featureMat<-rbind(featureMat3, featureMat4, featureMat6)
+
+groups<-list("descending_late"=c("B3", "B5", "M5", "M7", "M9", "ST2", "ST3"),
+             "descending_early"=c("T13", "B1", "B2", "B7", "ILC2", "NK1", "NK2", "NK3", "NK4", "ST1"),
+             "ascending_late"=c("T9", "T11", "B4", "B6", "B8", "B9", "M8", "M10", "NK5"),
+             "ascending_early"=c("T1", "T2", "T5", "T6", "T8", "T10", "T12"),
+             "hill"=c("T3", "T4", "T7", "T14", "B10"),
+             "valley"=c("M1", "M2", "M3", "M4", "M6"))
+
+eff_size_heatmap(metaMat=metaMat, featureMat=as.data.frame(featureMat[1:44]), logistic = FALSE, filename="Fig3_effsizes_heatmap_scale_mean.tiff", q_cutoff = NA, signif_only = FALSE, timepoints = featureMat$timepoints, order=c("TP1p\nvs\nTP1c", "TP2\nvs\nTP1p", "TP3\nvs\nTP2"), label_angel = 0, width=17, overall_effect = "scale", overall_effect_function = "mean")
+
+#effect on timepoint of MCT (Figure 3b)
+#
+freq_main$blood_type<-rep(1, nrow(freq_main))
+freq_main$blood_type[freq_main$chip%in%metadata$chip_id[metadata$timepoint_cat==1&metadata$blood_type_d0==0]]<-0
+freq_main$timepoint[freq_main$timepoint=="1"&freq_main$blood_type==0]<-"0"
+
+
+as.data.frame(as.numeric(freq_main$timepoint))->metaMat
+colnames(metaMat)<-"Age"
+
+fastDummies::dummy_columns(metaMat)->dummies
+
+#heatmap
+featureMat1 = as.data.frame(freq_main[1:42][dummies$Age_2!=1&dummies$Age_1!=1,])
+metaMat1 = as.data.frame(dummies$Age_3[dummies$Age_2!=1&dummies$Age_1!=1])
+colnames(metaMat1)<-"Age"
+featureMat1$timepoints<-rep("TP3\nvs\nTP1c")
+
+featureMat2 = as.data.frame(freq_main[1:42][dummies$Age_1!=1&dummies$Age_3!=1,])
+metaMat2 = as.data.frame(dummies$Age_2[dummies$Age_1!=1&dummies$Age_3!=1])
+colnames(metaMat2)<-"Age"
+featureMat2$timepoints<-rep("TP2\nvs\nTP1c")
+
+featureMat3 = as.data.frame(freq_main[1:42][dummies$Age_0!=1&dummies$Age_1!=1,])
+metaMat3 = as.data.frame(dummies$Age_3[dummies$Age_0!=1&dummies$Age_1!=1])
+colnames(metaMat3)<-"Age"
+featureMat3$timepoints<-rep("TP3\nvs\nTP2")
+
+featureMat4 = as.data.frame(freq_main[1:42][dummies$Age_2!=1&dummies$Age_3!=1,])
+metaMat4 = as.data.frame(dummies$Age_1[dummies$Age_2!=1&dummies$Age_3!=1])
+colnames(metaMat4)<-"Age"
+featureMat4$timepoints<-rep("TP1p\nvs\nTP1c")
+
+featureMat5 = as.data.frame(freq_main[1:42][dummies$Age_0!=1&dummies$Age_2!=1,])
+metaMat5 = as.data.frame(dummies$Age_3[dummies$Age_0!=1&dummies$Age_2!=1])
+colnames(metaMat5)<-"Age"
+featureMat5$timepoints<-rep("TP3\nvs\nTP1p")
+
+featureMat6 = as.data.frame(freq_main[1:42][dummies$Age_0!=1&dummies$Age_3!=1,])
+metaMat6 = as.data.frame(dummies$Age_2[dummies$Age_0!=1&dummies$Age_3!=1])
+colnames(metaMat6)<-"Age"
+featureMat6$timepoints<-rep("TP2\nvs\nTP1p")
+
+metaMat<-rbind(metaMat3, metaMat4, metaMat6)
+featureMat<-rbind(featureMat3, featureMat4, featureMat6)
+
+
+
+groups<-list("descending_late"=c("B3", "T3", "T4", "ST3"),
+             "descending_early"=c("M1", "B5", "B2", "M3", "M6", "NK1", "NK3", "T12"),
+             "ascending_late"=c("ST1", "NK2", "M5", "B6", "B8", "B9", "M8", "M10", "NK5", "T2", "T6", "T8"),
+             "ascending_early"=c("T1", "T10", "T5", "B4", "M4", "NK4"),
+             "hill"=c("M2", "T14", "B10"),
+             "valley"=c("B1", "B7", "M7", "M9", "ST2", "T11", "T13", "T7", "T9"))
+
+eff_size_heatmap(metaMat=metaMat, featureMat=as.data.frame(featureMat[1:42]), logistic = FALSE, filename="Fig3b_effsizes_heatmap_scale_mean.tiff", q_cutoff = NA, signif_only = FALSE, timepoints = featureMat$timepoints, order=c("TP1p\nvs\nTP1c", "TP2\nvs\nTP1p", "TP3\nvs\nTP2"), label_angel = 0, width=17, overall_effect = "scale", overall_effect_function = "mean")
+
+```
+
+
+```{r clustered mean trajectories Figure 2+3 DONE}
+source("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/annotation_clustered_ttrajectories.R", echo=TRUE)
+
+freq_all$blood_type<-metadata$blood_type_d0[ match(freq_all$chip, metadata$chip_id)]
+
+freq_all$timepoint[freq_all$timepoint=="TP1"&freq_all$blood_type==0]<-"TP1c"
+freq_all$timepoint[freq_all$timepoint=="TP1"&freq_all$blood_type==1]<-"TP1p"
+
+pivot_longer(data=freq_all, cols=1:44)->dat
+
+
+dat%>%group_by(timepoint, name)%>%reframe(mean=mean(value)) ->dat
+pivot_wider(dat, values_from=c(3), names_from = c(1))->dat
+
+#cluster TP1c-TP1p-TP2-TP3
+dat[4:7]->remove
+
+remove<-remove-apply(dat[4:7], 1, mean)
+remove<-remove/apply(dat[4:7], 1, sd)
+
+clusterLongData(remove, idAll=dat$name)->cld_TP123
+
+set.seed(12345)
+kml(cld_TP123, nbRedrawing = 1000, parAlgo = parALGO(startingCond = "kmeans++", imputationMethod = "copyMean", scale = T, saveFreq = Inf))
+
+   
+crit<-c(mean(unlist(lapply(cld_TP123@c2, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_TP123@c3, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_TP123@c4, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_TP123@c5, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_TP123@c6, function(x) x@criterionValues[["Calinski.Harabatz"]]))))
+   
+     #remove$clusters<- kml::getClusters(xCld=cld_TP123, nbCluster = which(crit==max(crit))+1)
+     remove$clusters<- kml::getClusters(xCld=cld_TP123, nbCluster = 6)
+     remove$celltype<-dat$name
+     remove<-pivot_longer(remove, cols=1:4)
+     
+     remove$clusters<-paste("Group", remove$clusters)
+     
+library(gridExtra)
+     
+annotations<-list()
+for(i in 1:6){
+  annotations[[i]]<-unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]])
+}
+names(annotations)<-unique(remove$clusters)
+
+
+label<-c()
+group<-c()
+x<-c()
+y<-c()
+
+for(i in 1:6){
+  
+  tmp<-length(unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]]))
+  
+  label<-c(label, unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]]))
+  group<-c(group, rep(unique(remove$clusters)[i], tmp))
+  x<-c(x, ((seq_len(tmp)-1)%%3)+1)
+  y<-c(y, -((seq_len(tmp)-1)%/%3))
+  
+  }
+
+annotations<-as.data.frame(cbind(label, group, x, y))
+annotations$x<-as.numeric(annotations$x)
+annotations$y<-as.numeric(annotations$y)
+
+annotations$label[annotations$label=="others"]<-"MN"
+remove$celltype[remove$celltype=="others"]<-"MN"
+
+#define_order
+annotations$group<-factor(as.character(annotations$group), levels = c("Group C", "Group A", "Group B", "Group D", "Group F", "Group E"))
+remove$clusters<-factor(as.character(remove$clusters), levels = c("Group C", "Group A", "Group B", "Group D", "Group F", "Group E"))
+
+#clustered_trajectories(annotations = annotations, remove = remove, filename="Fig3_clustered_trajectories.tiff", border_colors=c("#9933FF", "#FFC000", "#00CCFF", "#FF66FF", "#FF0000", "#00FF00"), subscript=TRUE)
+
+
+        labels <- c(
+  expression(TP1[C]),
+  expression(TP1[P]),
+  "TP2",
+  "TP3"
+    )  
+
+
+
+  tiff(filename="Fig3_clustered_trajectories.tiff", width=1150, height=2000)
+    ggplot(data = remove, aes(x = name, y = value, group = celltype, color=clusters)) +
+    geom_smooth(se = FALSE, linewidth = 3) +
+    scale_color_manual(values=c("#9933FF", "#FFC000", "#00CCFF", "#FF66FF", "#FF0000", "#00FF00"))+
+    theme_bw() +
+    scale_x_discrete(expand = c(0.1, 0.1), labels=labels) +
+    scale_y_continuous(expand = c(0.1, 0.1), breaks = c(-1,0,1)) +
+    facet_wrap(~clusters, ncol=1)+
+    theme(
+      axis.title = element_blank(),
+      aspect.ratio = 0.6,
+      axis.text.y = element_text(size = 70),
+      axis.text.x = if (TRUE) element_text(size = 80, angle = angle, vjust = 0.5) else element_blank(),
+      axis.ticks.x = if (TRUE) element_line() else element_blank(),
+      panel.spacing = unit(2, "lines"),
+      strip.text=element_blank()
+    )
+  dev.off()
+#cluster P-T-A
+
+dat[c("TP1c", "CB", "AB")]->remove
+colnames(remove)<-c("P", "T", "A")
+
+remove<-remove-apply(dat[c("TP1c", "CB", "AB")], 1, mean)
+remove<-remove/apply(dat[c("TP1c", "CB", "AB")], 1, sd)
+
+clusterLongData(remove, idAll=dat$name)->cld_pta
+
+set.seed(12345)
+kml(cld_pta, nbRedrawing = 1000, parAlgo = parALGO(startingCond = "kmeans++", imputationMethod = "copyMean", scale = T, saveFreq = Inf))
+
+   crit<-c(mean(unlist(lapply(cld_pta@c2, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_pta@c3, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_pta@c4, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_pta@c5, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_pta@c6, function(x) x@criterionValues[["Calinski.Harabatz"]]))))
+   
+     remove$clusters<- kml::getClusters(xCld=cld_pta, nbCluster = which(crit==max(crit))+1)
+     remove$celltype<-dat$name
+     remove<-pivot_longer(remove, cols=1:3)
+     
+     remove$clusters<-paste("Group", remove$clusters)
+     
+     remove$name<-factor(remove$name, levels = c("P", "T", "A"))
+
+annotations<-list()
+for(i in 1:6){
+  annotations[[i]]<-unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]])
+}
+names(annotations)<-unique(remove$clusters)
+
+
+label<-c()
+group<-c()
+x<-c()
+y<-c()
+
+for(i in 1:6){
+  
+  tmp<-length(unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]]))
+  
+  label<-c(label, unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]]))
+  group<-c(group, rep(unique(remove$clusters)[i], tmp))
+  x<-c(x, ((seq_len(tmp)-1)%%3)+1)
+  y<-c(y, -((seq_len(tmp)-1)%/%3))
+  
+  }
+
+annotations<-as.data.frame(cbind(label, group, x, y))
+annotations$x<-as.numeric(annotations$x)
+annotations$y<-as.numeric(annotations$y)
+
+annotations$label[annotations$label=="others"]<-"MN"
+remove$celltype[remove$celltype=="others"]<-"MN"
+
+#define_order
+annotations$group<-factor(as.character(annotations$group), levels = c("Group C", "Group D", "Group A", "Group F", "Group B", "Group E"))
+remove$clusters<-factor(as.character(remove$clusters), levels = c("Group C", "Group D", "Group A", "Group F", "Group B", "Group E"))
+
+#clustered_trajectories(annotations = annotations, remove = remove, filename="Fig2_clustered_trajectories.tiff", border_colors=c("#9933FF", "#FFC000", "#00CCFF", "#FF66FF", "#FF0000", "#00FF00"), angle=0)
+
+
+  tiff(filename="Fig2_clustered_trajectories.tiff", width=1150, height=2000)
+    ggplot(data = remove, aes(x = name, y = value, group = celltype, color=clusters)) +
+    geom_smooth(se = FALSE, linewidth = 3) +
+    scale_color_manual(values=c("#9933FF", "#FFC000", "#00CCFF", "#FF66FF", "#FF0000", "#00FF00"))+
+    theme_bw() +
+    scale_x_discrete(expand = c(0.1, 0.1)) +
+    scale_y_continuous(expand = c(0.1, 0.1), breaks = c(-1,0,1)) +
+    facet_wrap(~clusters, ncol=1)+
+    theme(
+      axis.title = element_blank(),
+      aspect.ratio = 0.6,
+      axis.text.y = element_text(size = 70),
+      axis.text.x = if (TRUE) element_text(size = 80, angle = 0, vjust = 0.5) else element_blank(),
+      axis.ticks.x = if (TRUE) element_line() else element_blank(),
+      panel.spacing = unit(2, "lines"),
+      strip.text=element_blank()
+    )
+  dev.off()
+#supplementals
+
+freq_main_all[is.na(freq_main_all)]<-0
+
+freq_main_all$blood_type<-metadata$blood_type_d0[ match(freq_main_all$chip, metadata$chip_id)]
+
+freq_main_all$timepoint[freq_main_all$timepoint=="TP1"&freq_main_all$blood_type==0]<-"TP1c"
+freq_main_all$timepoint[freq_main_all$timepoint=="TP1"&freq_main_all$blood_type==1]<-"TP1p"
+
+pivot_longer(data=freq_main_all, cols=1:42)->dat
+
+
+dat%>%group_by(timepoint, name)%>%reframe(mean=mean(value)) ->dat
+pivot_wider(dat, values_from=c(3), names_from = c(1))->dat
+
+#cluster TP1c-TP1p-TP2-TP3
+dat[4:7]->remove
+
+remove<-remove-apply(dat[4:7], 1, mean)
+remove<-remove/apply(dat[4:7], 1, sd)
+
+clusterLongData(remove, idAll=dat$name)->cld_TP123_main
+
+set.seed(12345)
+kml(cld_TP123_main, nbRedrawing = 1000, parAlgo = parALGO(startingCond = "kmeans++", imputationMethod = "copyMean", scale = T, saveFreq = Inf))
+
+   
+crit<-c(mean(unlist(lapply(cld_TP123_main@c2, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_TP123_main@c3, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_TP123_main@c4, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_TP123_main@c5, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_TP123_main@c6, function(x) x@criterionValues[["Calinski.Harabatz"]]))))
+   
+     #remove$clusters<- kml::getClusters(xCld=cld_TP123_main, nbCluster = which(crit==max(crit))+1)
+     remove$clusters<- kml::getClusters(xCld=cld_TP123_main, nbCluster = 6)
+     remove$celltype<-dat$name
+     remove<-pivot_longer(remove, cols=1:4)
+     
+     remove$clusters<-paste("Group", remove$clusters)
+     
+library(gridExtra)
+     
+annotations<-list()
+for(i in 1:6){
+  annotations[[i]]<-unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]])
+}
+names(annotations)<-unique(remove$clusters)
+
+
+label<-c()
+group<-c()
+x<-c()
+y<-c()
+
+for(i in 1:6){
+  
+  tmp<-length(unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]]))
+  
+  label<-c(label, unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]]))
+  group<-c(group, rep(unique(remove$clusters)[i], tmp))
+  x<-c(x, ((seq_len(tmp)-1)%%3)+1)
+  y<-c(y, -((seq_len(tmp)-1)%/%3))
+  
+  }
+
+annotations<-as.data.frame(cbind(label, group, x, y))
+annotations$x<-as.numeric(annotations$x)
+annotations$y<-as.numeric(annotations$y)
+
+#define_order
+annotations$group<-factor(as.character(annotations$group), levels = c("Group E", "Group C", "Group A", "Group D", "Group F", "Group B"))
+remove$clusters<-factor(as.character(remove$clusters), levels = c("Group E", "Group C", "Group A", "Group D", "Group F", "Group B"))
+
+#clustered_trajectories(annotations = annotations, remove = remove, filename="Figs3b_clustered_trajectories.tiff", border_colors=c("#9933FF", "#FFC000", "#00CCFF", "#FF66FF", "#FF0000", "#00FF00"), subscript=TRUE)
+
+  tiff(filename="FigS3_clustered_trajectories.tiff", width=1150, height=2000)
+    ggplot(data = remove, aes(x = name, y = value, group = celltype, color=clusters)) +
+    geom_smooth(se = FALSE, linewidth = 3) +
+    scale_color_manual(values=c("#9933FF", "#FFC000", "#00CCFF", "#FF66FF", "#FF0000", "#00FF00"))+
+    theme_bw() +
+    scale_x_discrete(expand = c(0.1, 0.1), labels=labels) +
+    scale_y_continuous(expand = c(0.1, 0.1), breaks = c(-1,0,1)) +
+    facet_wrap(~clusters, ncol=1)+
+    theme(
+      axis.title = element_blank(),
+      aspect.ratio = 0.6,
+      axis.text.y = element_text(size = 70),
+      axis.text.x = if (TRUE) element_text(size = 80, angle = angle, vjust = 0.5) else element_blank(),
+      axis.ticks.x = if (TRUE) element_line() else element_blank(),
+      panel.spacing = unit(2, "lines"),
+      strip.text=element_blank()
+    )
+  dev.off()
+#cluster P-T-A
+
+dat[c("TP1c", "CB", "AB")]->remove
+colnames(remove)<-c("P", "T", "A")
+
+remove<-remove-apply(dat[c("TP1c", "CB", "AB")], 1, mean)
+remove<-remove/apply(dat[c("TP1c", "CB", "AB")], 1, sd)
+
+clusterLongData(remove, idAll=dat$name)->cld_pta_main
+
+set.seed(12345)
+kml(cld_pta_main, nbRedrawing = 1000, parAlgo = parALGO(startingCond = "kmeans++", imputationMethod = "copyMean", scale = T, saveFreq = Inf))
+
+   crit<-c(mean(unlist(lapply(cld_pta_main@c2, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_pta_main@c3, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_pta_main@c4, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_pta_main@c5, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld_pta_main@c6, function(x) x@criterionValues[["Calinski.Harabatz"]]))))
+   
+     remove$clusters<- kml::getClusters(xCld=cld_pta_main, nbCluster = which(crit==max(crit))+1)
+     remove$celltype<-dat$name
+     remove<-pivot_longer(remove, cols=1:3)
+     
+     remove$clusters<-paste("Group", remove$clusters)
+     
+     remove$name<-factor(remove$name, levels = c("P", "T", "A"))
+
+annotations<-list()
+for(i in 1:6){
+  annotations[[i]]<-unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]])
+}
+names(annotations)<-unique(remove$clusters)
+
+
+label<-c()
+group<-c()
+x<-c()
+y<-c()
+
+for(i in 1:6){
+  
+  tmp<-length(unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]]))
+  
+  label<-c(label, unique(remove$celltype[remove$clusters==unique(remove$clusters)[i]]))
+  group<-c(group, rep(unique(remove$clusters)[i], tmp))
+  x<-c(x, ((seq_len(tmp)-1)%%3)+1)
+  y<-c(y, -((seq_len(tmp)-1)%/%3))
+  
+  }
+
+annotations<-as.data.frame(cbind(label, group, x, y))
+annotations$x<-as.numeric(annotations$x)
+annotations$y<-as.numeric(annotations$y)
+
+
+#define_order
+annotations$group<-factor(as.character(annotations$group), levels = c("Group C", "Group D", "Group A", "Group F", "Group B", "Group E"))
+remove$clusters<-factor(as.character(remove$clusters), levels = c("Group C", "Group D", "Group A", "Group F", "Group B", "Group E"))
+
+#clustered_trajectories(annotations = annotations, remove = remove, filename="Figs2b_clustered_trajectories.tiff", border_colors=c("#9933FF", "#FFC000", "#00CCFF", "#FF66FF", "#FF0000", "#00FF00"), angle=0)
+
+  tiff(filename="FigS2_clustered_trajectories.tiff", width=1150, height=2000)
+    ggplot(data = remove, aes(x = name, y = value, group = celltype, color=clusters)) +
+    geom_smooth(se = FALSE, linewidth = 3) +
+    scale_color_manual(values=c("#9933FF", "#FFC000", "#00CCFF", "#FF66FF", "#FF0000", "#00FF00"))+
+    theme_bw() +
+    scale_x_discrete(expand = c(0.1, 0.1)) +
+    scale_y_continuous(expand = c(0.1, 0.1), breaks = c(-1,0,1)) +
+    facet_wrap(~clusters, ncol=1)+
+    theme(
+      axis.title = element_blank(),
+      aspect.ratio = 0.6,
+      axis.text.y = element_text(size = 70),
+      axis.text.x = if (TRUE) element_text(size = 80, angle = 0, vjust = 0.5) else element_blank(),
+      axis.ticks.x = if (TRUE) element_line() else element_blank(),
+      panel.spacing = unit(2, "lines"),
+      strip.text=element_blank()
+    )
+  dev.off()
+
+```
+
+```{r Figure S3d absolute cell numbers}
+
+cellcounts<-PBMC_counts_Chipcytoemtry_MW_ES_Mri_JG <- read_excel("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/PBMC_counts_Chipcytoemtry_MW_ES_Mri_JG.xlsx", sheet = "absolute cell counts")
+cellcounts$chip_id[cellcounts$chip_id=="M835045"]<-c("M835045_1", "M835045_2")
+cellcounts$chip_id[cellcounts$chip_id=="M835057"]<-c("M835057_1", "M835057_2")
+
+cellcounts$M4<-cellcounts$M4+cellcounts$M9
+cellcounts$M9<-NULL
+cellcounts$B2<-cellcounts$B2+cellcounts$B12
+cellcounts$B12<-NULL
+cellcounts$B2<-cellcounts$B2+cellcounts$B8
+cellcounts$B8<-NULL
+cellcounts$B3<-cellcounts$B3+cellcounts$B13
+cellcounts$B13<-NULL
+cellcounts$B3<-cellcounts$B10+cellcounts$B3
+cellcounts$B10<-NULL
+cellcounts$T4<-cellcounts$T4+cellcounts$T9
+cellcounts$T9<-NULL
+cellcounts$M5<-cellcounts$M5+cellcounts$M15
+cellcounts$M15<-NULL
+
+#rename
+colnames(cellcounts)[colnames(cellcounts)=="M14"]<-"ILC2"
+colnames(cellcounts)[colnames(cellcounts)=="M8"]<-"others1"
+colnames(cellcounts)[colnames(cellcounts)=="M6"]<-"others2"
+
+colnames(cellcounts)[colnames(cellcounts)=="B9"]<-"B8"
+colnames(cellcounts)[colnames(cellcounts)=="B11"]<-"B9"
+colnames(cellcounts)[colnames(cellcounts)=="B14"]<-"B10"
+
+colnames(cellcounts)[colnames(cellcounts)=="M7"]<-"M6"
+colnames(cellcounts)[colnames(cellcounts)=="M10"]<-"M7"
+colnames(cellcounts)[colnames(cellcounts)=="M11"]<-"M8"
+colnames(cellcounts)[colnames(cellcounts)=="M12"]<-"M9"
+colnames(cellcounts)[colnames(cellcounts)=="M13"]<-"M10"
+
+colnames(cellcounts)[colnames(cellcounts)=="T10"]<-"T9"
+colnames(cellcounts)[colnames(cellcounts)=="T11"]<-"T10"
+colnames(cellcounts)[colnames(cellcounts)=="T12"]<-"T11"
+colnames(cellcounts)[colnames(cellcounts)=="T13"]<-"T12"
+colnames(cellcounts)[colnames(cellcounts)=="T14"]<-"T13"
+colnames(cellcounts)[colnames(cellcounts)=="T15"]<-"T14"
+
+cellcounts$others1<-cellcounts$others1+cellcounts$others2
+colnames(cellcounts)[colnames(cellcounts)=="others1"]<-"others"
+cellcounts$others2<-NULL
+
+#stacked plots MCT
+
+subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "T")]
+"T cells"<-subdata[,-c(14, 16:19)]%>%rowSums()
+
+"B cells"<-cellcounts[,stringr::str_detect(colnames(cellcounts), "B")]%>%rowSums()
+
+"NK cells"<-cellcounts[,stringr::str_detect(colnames(cellcounts), "NK")]%>%rowSums()
+
+subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "M")]
+"Myeloid cells"<-subdata[,-c(11)]%>%rowSums()
+
+subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "ST")]
+"Stem cells"<-subdata[,-c(4)]%>%rowSums()
+
+"ILC2"<-cellcounts$ILC2
+
+"N/A"<-cellcounts$others
+
+subdata<-as.data.frame(cbind(`T cells`, `B cells`, `NK cells`, `Myeloid cells`, `Stem cells`, `ILC2`, `N/A`))
+
+subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
+subdata<-na.omit(subdata)
+data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:8)
+data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
+data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
+data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
+
+data_grouped$name[data_grouped$name=="T cells"]<-"TC"
+data_grouped$name[data_grouped$name=="B cells"]<-"BC"
+data_grouped$name[data_grouped$name=="NK cells"]<-"NKC"
+data_grouped$name[data_grouped$name=="Myeloid cells"]<-"MC"
+data_grouped$name[data_grouped$name=="Stem cells"]<-"SC"
+data_grouped$name<-factor(as.character(data_grouped$name), levels=c("TC","BC", "ILC2", "MC","NKC", "SC", "N/A"))
+
+stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
+    geom_bar(position='stack', stat='identity')+
+    #scale_fill_manual("Celltype", values = c("#ff3366", "#ff6633", 	"#ffcc33", "#33cc99", "#3399ff"))+
+   scale_fill_manual("Celltype", values =   c("#3399ff", "#ff3366", "#AE70A8", "#ff6633", "#ffcc33", "#33cc99", "grey"))+
+    labs(title = "Main cell types")+
+    ylab("PBMCs/ml [x10^6]")+
+    theme_classic()+
+      theme(legend.text = element_text(size=60), 
+          legend.title = element_blank(), 
+          axis.title = element_text(size=60),
+          axis.text = element_text(size=60),
+          plot.title = element_text(size=70),
+          axis.title.x = element_blank(),
+#          axis.text.x=element_text(angle=90, vjust=0.4),
+          aspect.ratio = 1.5)
+  
+
+  
+  tiff(filename="FigS3d_PBMCcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
+  plot(stacked_barplot)
+  dev.off()
+
+#stacked plots T cells
+
+subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "T")]
+subdata<-subdata[,-c(14, 16:19)]
+subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
+subdata<-na.omit(subdata)
+data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:15)
+data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
+data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
+data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
+
+stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
+    geom_bar(position='stack', stat='identity')+
+    scale_fill_manual("Celltype", values = color_clusters)+
+    labs(title = "T cells")+
+    ylab("PBMC/ml [x10^6]")+
+    theme_classic()+
+      theme(legend.text = element_text(size=60), 
+          legend.title = element_blank(), 
+          axis.title = element_text(size=60),
+          axis.text = element_text(size=60),
+          plot.title = element_text(size=70),
+          axis.title.x = element_blank(),
+#          axis.text.x=element_text(angle=90, vjust=0.4),
+          aspect.ratio = 1.5)
+  
+
+  
+  tiff(filename="FigS3d_Tcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
+  plot(stacked_barplot)
+  dev.off()
+
+  
+  #stacked plots B cells
+subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "B")]
+
+subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
+subdata<-na.omit(subdata)
+data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:11)
+data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
+data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
+data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
+
+stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
+    geom_bar(position='stack', stat='identity')+
+    scale_fill_manual("Celltype", values = color_clusters)+
+    labs(title = "B cells")+
+    ylab("PBMC/ml [x10^6]")+
+    theme_classic()+
+      theme(legend.text = element_text(size=60), 
+          legend.title = element_blank(), 
+          axis.title = element_text(size=60),
+          axis.text = element_text(size=60),
+          plot.title = element_text(size=70),
+          axis.title.x = element_blank(),
+#          axis.text.x=element_text(angle=90, vjust=0.4),
+          aspect.ratio = 1.5)
+  
+
+  
+  tiff(filename="FigS3d_Bcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
+  plot(stacked_barplot)
+  dev.off()
+
+  
+  #stacked plots NK cells
+subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "NK")]
+
+subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
+subdata<-na.omit(subdata)
+data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:6)
+data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
+data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
+data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
+
+stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
+    geom_bar(position='stack', stat='identity')+
+    scale_fill_manual("Celltype", values = color_clusters)+
+    labs(title = "NK cells")+
+    ylab("PBMC/ml [x10^6]")+
+    theme_classic()+
+      theme(legend.text = element_text(size=60), 
+          legend.title = element_blank(), 
+          axis.title = element_text(size=60),
+          axis.text = element_text(size=60),
+          plot.title = element_text(size=70),
+          axis.title.x = element_blank(),
+#          axis.text.x=element_text(angle=90, vjust=0.4),
+          aspect.ratio = 1.5)
+  
+
+  
+  tiff(filename="FigS3d_NKcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
+  plot(stacked_barplot)
+  dev.off()
+
+  
+  #stacked plots myeloid cells
+subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "M")]
+subdata<-subdata[,-c(11)]
+subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
+subdata<-na.omit(subdata)
+data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:11)
+data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
+data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
+data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
+
+stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
+    geom_bar(position='stack', stat='identity')+
+    scale_fill_manual("Celltype", values = color_clusters)+
+    labs(title = "Myeloid cells")+
+    ylab("PBMC/ml [x10^6]")+
+    theme_classic()+
+      theme(legend.text = element_text(size=60), 
+          legend.title = element_blank(), 
+          axis.title = element_text(size=60),
+          axis.text = element_text(size=60),
+          plot.title = element_text(size=70),
+          axis.title.x = element_blank(),
+#          axis.text.x=element_text(angle=90, vjust=0.4),
+          aspect.ratio = 1.5)
+  
+
+  
+  tiff(filename="FigS3d_Myeloidcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
+  plot(stacked_barplot)
+  dev.off()
+
+  
+  #stacked plots stem cells
+subdata<-cellcounts[,stringr::str_detect(colnames(cellcounts), "ST")]
+subdata<-subdata[,-c(4)]
+subdata$timepoint<-metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]
+subdata<-na.omit(subdata)
+data_grouped<-subdata%>%group_by(timepoint)%>%summarise(across(everything(), mean))%>%pivot_longer(cols=2:4)
+data_grouped$timepoint[data_grouped$timepoint==1]<-"TP1"
+data_grouped$timepoint[data_grouped$timepoint==2]<-"TP2"
+data_grouped$timepoint[data_grouped$timepoint==3]<-"TP3"
+
+stacked_barplot<-ggplot(data_grouped, aes(fill=factor(name), y=value, x=factor(timepoint))) +
+    geom_bar(position='stack', stat='identity')+
+    scale_fill_manual("Celltype", values = color_clusters)+
+    labs(title = "Stem cells")+
+    ylab("PBMC/ml [x10^6]")+
+    theme_classic()+
+      theme(legend.text = element_text(size=60), 
+          legend.title = element_blank(), 
+          axis.title = element_text(size=60),
+          axis.text = element_text(size=60),
+          plot.title = element_text(size=70),
+          axis.title.x = element_blank(),
+#          axis.text.x=element_text(angle=90, vjust=0.4),
+          aspect.ratio = 1.5)
+  
+
+  
+  tiff(filename="FigS3d_Stemcells_stackedplot.tiff", compression = "lzw", width=1000, height=1000)
+  plot(stacked_barplot)
+  dev.off()
+
+as.data.frame(as.numeric(metadata$timepoint_cat[match(cellcounts$chip_id, metadata$chip_id)]))->metaMat
+
+metaMat<-as.data.frame(metaMat[!is.na(rowSums(as.data.frame(cellcounts[1:44]))),])
+colnames(metaMat)<-"Age"
+
+eff_size_plot(metaMat=metaMat, featureMat = na.omit(as.data.frame(cellcounts[1:44])), logistic = FALSE, filename="figS3d_effsize_TPs.tiff")
+
+
+
+```
+
+```{r Figure 4 Effect sizes on BPD/Sepsis DONE}
+#effect size of sepsis and bpd (figure 
+metaMat<-metadata
+metaMat$chip_id<-NULL
+metaMat$MHH_PatID<-NULL
+metaMat<-as.data.frame(apply(metaMat, 2, as.numeric))
+metadata$diet_PatID_first_months_categories->metaMat$diet_PatID_first_months_categories
+
+#heatmap
+freq$blood_type<-rep(1, nrow(freq))
+freq$blood_type[freq$chip%in%metadata$chip_id[metadata$timepoint_cat==1&metadata$blood_type_d0==0]]<-0
+freq$timepoint[freq$timepoint=="1"&freq$blood_type==0]<-"0"
+
+freq_main$blood_type<-rep(1, nrow(freq_main))
+freq_main$blood_type[freq_main$chip%in%metadata$chip_id[metadata$timepoint_cat==1&metadata$blood_type_d0==0]]<-0
+freq_main$timepoint[freq_main$timepoint=="1"&freq_main$blood_type==0]<-"0"
+
+freq$timepoint[freq$timepoint=="0"]<-"TP1c"
+freq$timepoint[freq$timepoint=="1"]<-"TP1p"
+freq$timepoint[freq$timepoint=="2"|freq$timepoint=="3"]<-paste("TP", freq$timepoint[freq$timepoint=="2"|freq$timepoint=="3"], sep="")
+
+freq_main$timepoint[freq_main$timepoint=="0"]<-"TP1c"
+freq_main$timepoint[freq_main$timepoint=="1"]<-"TP1p"
+freq_main$timepoint[freq_main$timepoint=="2"|freq_main$timepoint=="3"]<-paste("TP", freq_main$timepoint[freq_main$timepoint=="2"|freq_main$timepoint=="3"], sep="")
+
+dat_list<-list()
+
+
+
+#no eons
+groups<-list("PREDICTOR"=c("NK3", "M8", "T4",  "T3", "B9"),
+             "SEPSIS-MARKER"=c("M6", "M3", "ST2", "M5", "ILC2", "T8", "M10", "B7", "B3", "B5", "T4", "NK1", "M1", "M4", "B2"),
+             "SEQ"=c("B7", "T7", "T12"))
+
+as.data.frame(metaMat$sepsis_eons_lons_binary[metaMat$sepsis_eons_binary!=1&!is.na(metaMat$sepsis_eons_binary)])->tmp
+colnames(tmp)<-c("Sepsis")
+eff_size_heatmap(metaMat=tmp, featureMat=as.data.frame(subset(freq[1:44],select=-c(MN))[metaMat$sepsis_eons_binary!=1&!is.na(metaMat$sepsis_eons_binary),]), logistic = FALSE, filename="Fig4_effsize_spesis_pbmc_heatmap_no_eons.tiff", q_cutoff = 0.33, timepoints = freq$timepoint[metaMat$sepsis_eons_binary!=1&!is.na(metaMat$sepsis_eons_binary)], overall_effect = "none", overall_effect_function = "manual", order=c("TP1c", "TP1p", "TP2", "TP3"), signif_only = TRUE, group_levels=c("PREDICTOR", "SEPSIS-MARKER", "SEQ"), group_colors=c( "#70AD47", "#C00000", "#002060"), width=17, title = "LONS")->dat_list[["spesis_pbmc"]]
+
+#no eons 
+groups<-list("PRED"=c("T6", "M8", "T4"),
+             "SEPSIS-MARKER"=c("M3", "ST2", "M6", "B1", "T6", "B4", "T8", "B6", "M5", "T7", "T10", "B10", "B8", "B9", "M10", "NK2", "T2", "NK1", "M1", "ST3", "T4", "B3", "B5", "M4", "M2", "M9", "B2"),
+             "SEQ"=c("T11", "ST1"))
+
+as.data.frame(metaMat$sepsis_eons_lons_binary[metaMat$sepsis_eons_binary!=1&!is.na(metaMat$sepsis_eons_binary)])->tmp
+colnames(tmp)<-c("Sepsis")
+eff_size_heatmap(metaMat=tmp, featureMat=as.data.frame(freq_main[1:42][metaMat$sepsis_eons_binary!=1&!is.na(metaMat$sepsis_eons_binary),]), logistic = FALSE, filename="Fig4_effsize_spesis_main_heatmap_no_eons.tiff", q_cutoff = 0.33, timepoints = freq_main$timepoint[metaMat$sepsis_eons_binary!=1&!is.na(metaMat$sepsis_eons_binary)], overall_effect = "none", overall_effect_function = "manual", order=c("TP1c", "TP1p", "TP2", "TP3"), signif_only = TRUE, group_levels=c("PRED", "SEPSIS-MARKER", "SEQ"), group_colors=c( "#70AD47", "#C00000", "#002060"), width=17, title = "LONS")->dat_list[["spesis_main"]]
+
+
+groups<-list("EXPANDED"=c("ST2", "B4", "M9", "ST3", "B1", "M6", "M5", "M8", "M10", "M3", "B10", "ST1", "ILC2", "T5", "T10", "B6", "B8", "T8", "T9"),
+             "REDUCED"=c("B3", "M4", "T4", "B2", "T2", "T3"))
+
+as.data.frame(metaMat$bpd_binary_I)->tmp
+colnames(tmp)<-c("BPD")
+eff_size_heatmap(metaMat=tmp, featureMat=as.data.frame(subset(freq[1:44], select=-c(MN))), logistic = FALSE, filename="Fig4_effsize_BPD_pbmc_heatmap.tiff" , q_cutoff = 0.33,  timepoints = freq$timepoint, overall_effect = "none", overall_effect_function = "manual", order=c("TP1c", "TP1p", "TP2", "TP3"), signif_only = TRUE, group_levels=c("EXPANDED", "REDUCED"), group_colors=c( "#CC0066", "#44546A"), width=17, title = "BPD")->dat_list[["bpd_pbmc"]]
+
+groups<-list("EXPANDED"=c("B4", "B1", "T8", "ST2", "B6", "T10", "M9", "B8", "T6", "M5", "T11", "T9", "M6", "T5", "M3", "T7", "M8", "M10", "B10", "T2" ),
+             "REDUCED"=c("M4", "B3", "T4", "T3", "NK1", "M1", "ST3", "B2"))
+
+
+as.data.frame(metaMat$bpd_binary_I)->tmp
+colnames(tmp)<-c("BPD")
+eff_size_heatmap(metaMat=tmp, featureMat=as.data.frame(freq_main[1:42]), logistic = FALSE, filename="Fig4_effsize_BPD_main_heatmap.tiff", q_cutoff = 0.33, timepoints = freq_main$timepoint, overall_effect = "none", overall_effect_function = "manual", order=c("TP1c", "TP1p", "TP2", "TP3"), signif_only = TRUE, group_levels=c("EXPANDED", "REDUCED"), group_colors=c( "#CC0066", "#44546A"), width=17, title = "BPD")->dat_list[["bpd_main"]]
+
+
+
+#new figure approach
+LONS<-as.data.frame(dat_list$spesis_pbmc)
+bpd<-as.data.frame(dat_list$bpd_pbmc)
+
+LONS$outcome<-rep("LONS", nrow(LONS))
+bpd$outcome<-rep("BPD", nrow(bpd))
+
+df<-rbind(LONS, bpd)
+
+df <- df %>%
+  mutate(
+    sig = case_when(
+      Ps < 0.05  ~ "*",
+      TRUE           ~ ""
+    )
+  )
+
+
+mat <- df %>%
+  unite(col = "condition", timepoint, outcome, sep = "_") %>%
+  select(metavariable, condition, Ds) %>%
+  pivot_wider(names_from = condition, values_from = Ds) %>%
+  column_to_rownames("metavariable") %>%
+  as.matrix()
+
+desired_order <- c(
+  "TP1c_LONS", "TP1c_BPD",
+  "TP1p_LONS", "TP1p_BPD",
+  "TP2_LONS", "TP2_BPD",
+  "TP3_LONS", "TP3_BPD"
+)
+
+mat <- mat[, desired_order]
+mat <- as.matrix(mat)
+hc <- hclust(dist(mat))
+
+cell_order <- hc$labels[hc$order]
+
+df_plot <- df %>%
+  mutate(celltype = factor(metavariable, levels = cell_order))
+
+df_plot <- df_plot %>% mutate(tile_size = ifelse(Ps < 0.05, 6, 0))
+
+df_plot$metavariable<-factor(as.character(df_plot$metavariable), levels =  hc$label[hc$order])
+
+p<-ggplot(df_plot, aes(x=outcome, y=metavariable))+
+  geom_tile(aes(fill=Ds), color="black", size=2)+ 
+  scale_fill_gradient2(name = "Effect\nsize", 
+                       low = "blue", mid = "white", high = "red", 
+                       midpoint = 0, na.value="white", 
+                       guide = guide_colorbar (display = "gradient", order=1))+ 
+  facet_wrap(~timepoint, ncol=4)+
+  geom_point(data=filter(df_plot, Ps<0.05), aes(x=outcome, y=metavariable, size=tile_size), shape=8, color="black", stroke=3)+ 
+  scale_size_continuous(name="P-value\n<0.05", range = c(6,6), labels = c(""))+
+  guides(size = guide_legend(order=2,  keywidth = unit(4, "cm"), keyheight = unit(2, "cm"), override.aes = list(size=10)))+ 
+  guides(shape = guide_legend(order=2))+
+  theme_minimal() + 
+  theme(axis.text.x = element_text(size = 80), 
+        axis.text.y = element_text(size = 80), 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_blank(),
+        legend.text = element_text(size=50), 
+        legend.key.size = unit(4, "cm"), 
+        legend.title = element_text(size=60, margin = margin(b = 20)),
+        legend.justification = c(1,0.9),
+        plot.background = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(),
+        axis.text.x.bottom =element_text(angle = 90, vjust=0.5), 
+       strip.text = ggtext::element_markdown(size = 80)) + 
+  labs(x = "Timepoint", y = "Omics features")
+
+
+ggsave(filename="test.tiff", plot=p, width=20, height = 40)
+ggsave(filename="dendor.tiff", plot=ggdendro::ggdendrogram(hc, linewidth=6), width=40, height=5)
+
+
+
+df_plot<- df_plot%>%group_by(metavariable)%>%filter(any(Ps < 0.05))%>%ungroup()
+
+mat <- df_plot %>%
+  unite(col = "condition", timepoint, outcome, sep = "_") %>%
+  select(metavariable, condition, Ds) %>%
+  pivot_wider(names_from = condition, values_from = Ds) %>%
+  column_to_rownames("metavariable") %>%
+  as.matrix()
+
+desired_order <- c(
+  "TP1c_LONS", "TP1c_BPD",
+  "TP1p_LONS", "TP1p_BPD",
+  "TP2_LONS", "TP2_BPD",
+  "TP3_LONS", "TP3_BPD"
+)
+
+mat <- mat[, desired_order]
+mat <- as.matrix(mat)
+hc <- hclust(dist(mat))
+
+df_plot$metavariable<-factor(as.character(df_plot$metavariable), levels =  hc$label[hc$order])
+
+p<-ggplot(df_plot, aes(x=outcome, y=metavariable))+
+  geom_tile(aes(fill=Ds), color="black", size=2)+ 
+  scale_fill_gradient2(name = "Effect\nsize", 
+                       low = "blue", mid = "white", high = "red", 
+                       midpoint = 0, na.value="white", 
+                       guide = guide_colorbar (display = "gradient", order=1))+ 
+  facet_wrap(~timepoint, ncol=4)+
+  geom_point(data=filter(df_plot, Ps<0.05), aes(x=outcome, y=metavariable, size=tile_size), shape=8, color="black", stroke=3)+ 
+  scale_size_continuous(name="P-value\n<0.05", range = c(6,6), labels = c(""))+
+  guides(size = guide_legend(order=2,  keywidth = unit(4, "cm"), keyheight = unit(2, "cm"), override.aes = list(size=10)))+ 
+  guides(shape = guide_legend(order=2))+
+  theme_minimal() + 
+  theme(axis.text.x = element_text(size = 80), 
+        axis.text.y = element_text(size = 80), 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_blank(),
+        legend.text = element_text(size=50), 
+        legend.key.size = unit(4, "cm"), 
+        legend.title = element_text(size=60, margin = margin(b = 20)),
+        legend.justification = c(1,0.9),
+        plot.background = element_blank(), 
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(),
+        axis.text.x.bottom =element_text(angle = 90, vjust=0.5), 
+       strip.text = ggtext::element_markdown(size = 80)) + 
+  labs(x = "Timepoint", y = "Omics features")
+
+ggsave(filename="test.tiff", plot=p, width=20, height = 40)
+ggsave(filename="dendor.tiff", plot=ggdendro::ggdendrogram(hc, linewidth=6), width=40, height=5)
+
+  ggnewscale::new_scale_fill()+ 
+  geom_tile(aes(fill=group, x=length(unique(dat$timepoint))+0.7, width=0.25))+ 
+  scale_fill_manual(values=group_colors, labels=NULL, guide="none")+
+  scale_y_discrete(labels = function(x) gsub(".*_", "", x))+
+  scale_x_discrete(labels=x_labs)+
+  geom_text(data=group_labels, aes(x=length(unique(dat$timepoint))+0.7, y=y, label=group), size=16, color="white", angle=90, vjust=0.5)+
+  facet_grid(rows = vars(group), scales = "free_y", space = "free_y")+
+    labs(title=title)+
+
+
+```
+
+```{r Figure 5 Trajectories and Immunotypes}
+
+trajectories <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/all_changes_trajectories.rds")
+freq_imputed <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/all_changes_freq_imputed_timepoints_failed_removed.rds")
+#leiden_clusters_imputed_reduced <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/Final Chipcytometry Paper Calculations/leiden_clusters_final.rds")
+
+#rename freq imputed and trajectories
+#rename
+colnames(freq_imputed)[colnames(freq_imputed)=="M14"]<-"ILC2"
+colnames(freq_imputed)[colnames(freq_imputed)=="M8"]<-"others1"
+colnames(freq_imputed)[colnames(freq_imputed)=="M6"]<-"others2"
+
+colnames(freq_imputed)[colnames(freq_imputed)=="B9"]<-"B8"
+colnames(freq_imputed)[colnames(freq_imputed)=="B11"]<-"B9"
+colnames(freq_imputed)[colnames(freq_imputed)=="B14"]<-"B10"
+
+colnames(freq_imputed)[colnames(freq_imputed)=="M7"]<-"M6"
+colnames(freq_imputed)[colnames(freq_imputed)=="M10"]<-"M7"
+colnames(freq_imputed)[colnames(freq_imputed)=="M11"]<-"M8"
+colnames(freq_imputed)[colnames(freq_imputed)=="M12"]<-"M9"
+colnames(freq_imputed)[colnames(freq_imputed)=="M13"]<-"M10"
+
+colnames(freq_imputed)[colnames(freq_imputed)=="T10"]<-"T9"
+colnames(freq_imputed)[colnames(freq_imputed)=="T11"]<-"T10"
+colnames(freq_imputed)[colnames(freq_imputed)=="T12"]<-"T11"
+colnames(freq_imputed)[colnames(freq_imputed)=="T13"]<-"T12"
+colnames(freq_imputed)[colnames(freq_imputed)=="T14"]<-"T13"
+colnames(freq_imputed)[colnames(freq_imputed)=="T15"]<-"T14"
+
+colnames(freq_imputed)[2:46]->names(trajectories)
+
+freq_imputed$others1<-freq_imputed$others1+freq_imputed$others2
+freq_imputed$MN<-freq_imputed$others1+freq_imputed$others2
+freq_imputed$others1<-NULL
+freq_imputed$others2<-NULL
+
+get_clusters<-function(x, trajectories){  
+  cld<-trajectories[[x]][["cld"]]
+
+   crit<-c(mean(unlist(lapply(cld@c2, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld@c3, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld@c4, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld@c5, function(x) x@criterionValues[["Calinski.Harabatz"]]))),
+          mean(unlist(lapply(cld@c6, function(x) x@criterionValues[["Calinski.Harabatz"]]))))
+
+  nbclusters<-which(crit==max(crit))+1
+  top<-paste("c", nbclusters, sep="")
+  
+  slot(cld, top)[[1]]@clusters%>%as.data.frame()->prob
+  colnames(prob)<-x
+  
+  while(min(table(prob))<12&nbclusters>2){
+    nbclusters<-nbclusters-1
+    top<-paste("c", nbclusters, sep="")
+    slot(cld, top)[[1]]@clusters%>%as.data.frame()->prob
+    colnames(prob)<-x
+  }
+  
+  if(min(table(prob))<12){
+    prob<-as.data.frame(rep(NA, 114))
+    colnames(prob)<-x
+    return(prob)
+  } else {
+      return(prob)
+  }
+
+}
+
+do.call(cbind, lapply(names(trajectories),function(x) get_clusters(x=x, trajectories=trajectories)))->kml_clustering_reduced
+#do.call(cbind, lapply(names(trajectories_original),function(x) get_clusters(x=x, trajectories = trajectories_original)))->kml_clustering_original_reduced
+
+
+#get probabilitie
+#
+cap<- function(trajectories , kml_clustering){
+  # extract data from object
+  clustering <- as.data.frame(apply(kml_clustering, 2, function(x) match(x, LETTERS)))
+  tmp_object <- trajectories
+  
+
+  # iterate through each list object
+  output <- lapply(names(tmp_object), function(x){
+    print(x)
+    paste0("c", max(clustering[[x]]))->top
+    it <- length(slot(tmp_object[[x]][["cld"]], top))
+    donor <- tmp_object[[x]][["cld"]]@dimTraj[1]
+    
+    sapply(1:donor, function(d){
+    sapply(tmp_object[[x]][["cld"]][top], function(k){
+      k@clusters[d]
+    }) %>%table()/it
+    })%>%t()%>%as.data.frame() ->tmp_cap
+    
+    names(tmp_cap) <- paste0(x, "_", names(tmp_cap), sep="" )
+    tmp_cap
+  })
+  return(unlist(output, recursive = F) %>% dplyr::bind_cols() %>% magrittr::set_rownames(tmp_object[[1]][["cld"]]@idAll))
+}
+
+
+cap(trajectories = trajectories[colSums(is.na(kml_clustering_reduced))==0], kml_clustering = kml_clustering_reduced)->proba_reduced
+
+
+
+set.seed(42)
+prcomp(proba_reduced)->pca
+
+library(ggplot2)
+library(cowplot)
+
+plotElbowMain <- function(pca){
+  eigenvalue <- data.frame(pcs = 1:length(pca$sdev),
+                           variance.percent = (pca$sdev^2)/sum(pca$sdev^2),
+                           cumulative.variance.percent = cumsum((pca$sdev^2)/sum(pca$sdev^2)))
+  eigenvalue <- eigenvalue[1:30,]
+
+  p <- ggplot(eigenvalue, aes(pcs, variance.percent)) + 
+    geom_bar(stat = "identity") +
+    geom_line(aes(pcs, variance.percent), linewidth = 2) +
+    geom_point(aes(pcs, variance.percent), size = 6) +
+    geom_line(aes(pcs, cumulative.variance.percent), colour = "grey", linewidth = 2) + 
+    geom_point(aes(pcs, cumulative.variance.percent), colour = "grey", size = 6) + 
+    scale_x_continuous(breaks = c(1:nrow(eigenvalue))) +
+    geom_vline(xintercept = 13, linewidth = 3) +
+    xlab("PCs") +
+    ylab("Percentage of explained variances") +
+    theme_bw() +
+    theme(axis.text = element_text(size=50),
+          axis.title = element_text(size=50),
+          aspect.ratio = 7.16/13.4)
+
+  return(p)
+}
+
+legendPlot <- ggplot() + 
+  # Cumulative explained variance legend
+  geom_segment(aes(x = 0.07, xend = 0.27, y = 2.13), color = "grey", linewidth=4) +
+  geom_point(aes(x = 0.17, y = 2.13), size = 10, color = "grey") +
+  geom_text(aes(x = 0.17, y = 2.4), label = "Cumulative\nexplained\nvariance", size = 15, hjust = 0.5) +
+  
+  # Selected cutoff legend
+  geom_segment(aes(x = 0.07, xend = 0.27, y = 1.5, yend = 1.5), color = "black", linewidth=4) +
+  geom_text(aes(x = 0.17, y = 1.7), label = "Selected\ncutoff", size = 15, hjust = 0.5) +
+  
+  xlim(0, 0.5) + ylim(0.5, 3) +
+  theme_void()
+
+finalPlot <- plot_grid(
+  plotElbowMain(pca), 
+  legendPlot, 
+  ncol = 2, 
+  rel_widths = c(3, 0.4)  # Adjust widths as needed
+)
+
+tiff(filename="Figs5b_elbow_plot.tiff", width=2700, height=1200)
+print(finalPlot)
+dev.off()
+
+#three trajectories
+k=13
+set.seed(42)
+bluster::makeKNNGraph(pca$x[,1:k], k=11)->knn
+igraph::cluster_leiden(knn, n_iterations = 10000,resolution_parameter = 0.07, objective_function = c("CPM"))->leiden
+
+leiden$membership[leiden$membership==1]<-5
+leiden$membership[leiden$membership==3]<-1
+leiden$membership[leiden$membership==5]<-3
+leiden$membership[leiden$membership==2]<-5
+leiden$membership[leiden$membership==1]<-2
+leiden$membership[leiden$membership==5]<-1
+
+cluster_colors<-c("#278046", "#FAD510", "#7E3F8F")
+names(cluster_colors)<-c("1", "2", "3")
+
+tiff(filename="Figs5b_knn_graph.tiff", width=4000, height=4000)
+set.seed(12345)
+igraph::plot.igraph(knn, vertex.color=cluster_colors[leiden$membership], vertex.size=10, loop.size = 1, edge.width=8, vertex.label=NA)
+
+legend("bottomright",
+       legend = paste("ITJ-", names(cluster_colors), sep=""),
+       col = cluster_colors,
+       pch = 16,                        # filled circle
+       pt.cex = 25,                      # point size
+       cex = 20,                       # text size
+       bty = "n"                      # no box
+)
+
+
+dev.off()
+
+
+
+#set.seed=41456
+set.seed(42)
+uwot::umap(pca$x[,1:k], n_neighbors = 11)->umap_opt
+
+#umpa and pca
+#
+p<-ggplot(as.data.frame(cbind(umap_opt, "cluster"=factor(leiden$membership, levels = c(1,2,3)))),  aes(x = V1, y = V2, color=factor(cluster)))+
+  geom_point(size=15)+
+  scale_fill_manual(values=c("#278046", "#FAD510", "#7E3F8F"), aesthetics = "color")+
+    theme_classic()+
+  labs(y="UMAP2", x="UMAP1")+
+  theme(aspect.ratio = 1, 
+       legend.title = element_text(size=60),
+        axis.text=element_text(size=50),
+        axis.title = element_text(size=60),
+        legend.text = element_text(size=60),
+        axis.line = element_line(linewidth=2))+
+  guides(color = guide_legend(override.aes = list(size = 20), title = "ITJ"))
+
+tiff(filename="Fig5_umap_immunotraits.tiff", width=1200, height=1200)
+plot(p)
+dev.off()
+
+
+p<-ggplot(as.data.frame(pca$x), aes(x=PC1, y=PC2, color=factor(leiden$membership, levels = c(1,2,3))))+
+  geom_point(size=15)+
+  scale_fill_manual(values=c("#278046", "#FAD510", "#7E3F8F"), aesthetics = "color")+
+    theme_minimal()+
+  theme(aspect.ratio = 1, 
+       legend.title = element_blank(),
+        axis.text=element_text(size=50),
+        axis.title = element_text(size=80),
+        legend.text = element_text(size=80),
+        axis.line = element_line(linewidth=2))+
+  guides(color = guide_legend(override.aes = list(size = 20)))
+
+tiff(filename="Figs5b_PCA_immunotraits.tiff", width=1200, height=1200)
+plot(p)
+dev.off()
+
+
+
+
+#top 20 trajectories by variance inbetween clusters
+as.data.frame(t(aggregate(proba_reduced, b=list("cluster"=leiden$membership), FUN=mean)))->aggregated
+colnames(aggregated)<-aggregated[1,]
+aggregated<-aggregated[-1,]
+
+if(FALSE){
+#rename aggregated
+rownames(aggregated)->tmp
+stringr::str_split(tmp, "_")%>%unlist()->tmp
+
+tmp[c(TRUE,FALSE)]->tmp2
+
+tmp2[tmp2=="M9"]<-"M4"
+tmp2[tmp2=="B12"]<-"B2"
+tmp2[tmp2=="B8"]<-"B2"
+tmp2[tmp2=="B13"]<-"B3"
+tmp2[tmp2=="B10"]<-"B3"
+tmp2[tmp2=="T9"]<-"T4"
+tmp2[tmp2=="M15"]<-"M5"
+tmp2[tmp2=="M8"]<-"others"
+tmp2[tmp2=="M6"]<-"others"
+#rename
+
+tmp2[tmp2=="M14"]<-"ILC2"
+
+tmp2[tmp2=="B9"]<-"B8"
+tmp2[tmp2=="B11"]<-"B9"
+tmp2[tmp2=="B14"]<-"B10"
+
+
+tmp2[tmp2=="M7"]<-"M6"
+tmp2[tmp2=="M10"]<-"M7"
+tmp2[tmp2=="M11"]<-"M8"
+tmp2[tmp2=="M12"]<-"M9"
+tmp2[tmp2=="M13"]<-"M10"
+
+tmp2[tmp2=="T10"]<-"T9"
+tmp2[tmp2=="T11"]<-"T10"
+tmp2[tmp2=="T12"]<-"T11"
+tmp2[tmp2=="T13"]<-"T12"
+tmp2[tmp2=="T14"]<-"T13"
+tmp2[tmp2=="T15"]<-"T14"
+
+paste(tmp2, tmp[c(FALSE, TRUE)], sep="_")->tmp
+rm(tmp2)
+rownames(aggregated)<-tmp
+}
+
+names(sort(rowSums(abs(pca$rotation)), decreasing = TRUE)[1:30])->imp_cells
+
+#pheatmap(aggregated[rownames(aggregated)%in%names(sort(apply(aggregated, 1, var), decreasing=TRUE)[1:30]),], color=colorRampPalette(c("blue", #"white", "red"))(10), fontsize = 40, cellwidth = 60, cellheight=40, angle_col = 0, cluster_cols = FALSE)->p
+
+library(ComplexHeatmap)
+
+ComplexHeatmap::Heatmap(as.matrix(aggregated[rownames(aggregated)%in%names(sort(apply(aggregated, 1, var), decreasing=TRUE)[1:30]),]), rect_gp=gpar(col="grey", lwd=0.1), column_labels = c("ITJ-1", "ITJ-2", "ITJ-3"), column_names_rot =45, row_names_gp = gpar(fontsize=60), column_names_gp = gpar(fontsize=60), row_names_max_width = unit(12, "cm") , row_dend_width = unit(4, "cm"), row_dend_gp = gpar(lwd=3), column_dend_gp = gpar(lwd=3),
+        heatmap_legend_param = list(
+        title = "Mean\ntrajectory\nprobability\n", 
+        title_gp = gpar(fontsize=50),
+        labels_gp=gpar(fontsize=50),
+        legend_height=unit(10, "cm"),
+        grid_width=unit(2, "cm")
+    ) )->p
+
+
+tiff(filename="FigS5b_heatmap_Immunotrait_trajectories.tiff", width=900, height=2200)
+draw(p,  heatmap_legend_side="right" )
+dev.off()
+
+
+
+#metadeconfounder
+fastDummies::dummy_columns(as.vector(leiden$membership))[2:4]->featureMat
+colnames(featureMat)<-c("Immunotrait 1", "Immunotrait 2", "Immunotrait 3")
+
+metadata_PatID<-metadata_PatID[match(rownames(proba_reduced), metadata_PatID$MHH_PatID),]
+
+metaMat<-metadata_PatID
+metaMat$MHH_PatID<-NULL
+metaMat$chip_id<-NULL
+metaMat$timepoint<-NULL
+metaMat$timepoint_cat<-NULL
+rownames(metaMat)<-1:nrow(metaMat)
+
+for(i in colnames(metaMat)){
+  if(i%in%typeContinuous){
+    metaMat[[i]]<-as.numeric(unlist(metaMat[[i]]))
+  } else if (i%in%typeCategorical){
+    metaMat[[i]]<-as.character(unlist(metaMat[[i]]))
+  } else  {
+    metaMat[[i]]<-as.numeric(unlist(metaMat[[i]]))
+  }
+}
+
+colnames(metaMat)[colnames(metaMat)=="antibiotics_in anamnesis_treatment_duration"]<-"antibiotics_in_anamnesis_treatment_duration"
+colnames(metaMat)[colnames(metaMat)=="diet_breast milk+formula_PatID_first_month"]<-"diet_breast_milk_and_formula_PatID_first_month"
+colnames(metaMat)[colnames(metaMat)=="antibiotics_neonatal_and/or_anamnesis_binary"]<-"antibiotics_neonatal_andor_anamnesis_binary"
+
+metaMat$diet_PatID_first_months_categories<-metadata_PatID$diet_PatID_first_months_categories
+
+metadeconfoundR::MetaDeconfound(featureMat = featureMat, metaMat =metaMat , robustCutoff=1, typeCategorical = typeCategorical, typeContinuous = typeContinuous, collectMods=TRUE, logistic = TRUE, returnLong = TRUE, logLevel = "ERROR", doConfs = -1 )->metadeconf_out_immunotraits
+
+source("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/effect_size_plots_new.R", echo=TRUE)
+
+as.data.frame(featureMat$`Immunotrait 1`)->tmp
+colnames(tmp)<-"Trait 1"
+eff_size_plot(metaMat=metaMat, featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Fig5_effsize_Trait1.tiff", rename = metadata_rename, panel.height = 2.7)
+
+as.data.frame(featureMat$`Immunotrait 2`)->tmp
+colnames(tmp)<-"Trait 2"
+eff_size_plot(metaMat=metaMat, featureMat = tmp,signif_only = TRUE, logistic = TRUE, filename="Fig5_effsize_Trait2.tiff", rename = metadata_rename, panel.height = 2.7)
+
+as.data.frame(featureMat$`Immunotrait 3`)->tmp
+colnames(tmp)<-"Trait 3"
+eff_size_plot(metaMat=metaMat, featureMat = tmp,signif_only = TRUE, logistic = TRUE, filename="Fig5_effsize_Trait3.tiff", rename = metadata_rename, panel.height = 2.7)
+
+
+cbind(proba_reduced, "cluster"=leiden$membership)->data
+
+return<-matrix(nrow=ncol(data)-1, ncol=4)
+
+
+for(i in 1:(ncol(data)-1)){
+  
+  t<-kruskal.test(data[,i], data$cluster, p.adjust="fdr")
+
+  fml<-as.formula(paste(colnames(data)[i], "~ cluster"))
+  
+  ef<-rstatix::kruskal_effsize(data, fml, ci=TRUE)
+  
+  return[i, 1]<-t$p.value
+  return[i, 2]<-ef$effsize
+  return[i, 3]<-ef$conf.low
+  return[i, 4]<-ef$conf.high
+}
+
+
+return<-as.data.frame(return)
+colnames(return)<-c("p.value", "effsize", "conf.low", "conf.high")
+return$trait<-colnames(data)[1:(ncol(data)-1)]
+
+return<-return[order(return$effsize),]
+return$trait<-factor(return$trait, levels = return$trait)
+
+if(FALSE){
+#rename return
+return$trait->tmp
+stringr::str_split(tmp, "_")%>%unlist()->tmp
+
+tmp[c(TRUE,FALSE)]->tmp2
+
+tmp2[tmp2=="M9"]<-"M4"
+tmp2[tmp2=="B12"]<-"B2"
+tmp2[tmp2=="B8"]<-"B2"
+tmp2[tmp2=="B13"]<-"B3"
+tmp2[tmp2=="B10"]<-"B3"
+tmp2[tmp2=="T9"]<-"T4"
+tmp2[tmp2=="M15"]<-"M5"
+tmp2[tmp2=="M8"]<-"others"
+tmp2[tmp2=="M6"]<-"others"
+#rename
+
+tmp2[tmp2=="M14"]<-"ILC2"
+
+tmp2[tmp2=="B9"]<-"B8"
+tmp2[tmp2=="B11"]<-"B9"
+tmp2[tmp2=="B14"]<-"B10"
+
+
+tmp2[tmp2=="M7"]<-"M6"
+tmp2[tmp2=="M10"]<-"M7"
+tmp2[tmp2=="M11"]<-"M8"
+tmp2[tmp2=="M12"]<-"M9"
+tmp2[tmp2=="M13"]<-"M10"
+
+tmp2[tmp2=="T10"]<-"T9"
+tmp2[tmp2=="T11"]<-"T10"
+tmp2[tmp2=="T12"]<-"T11"
+tmp2[tmp2=="T13"]<-"T12"
+tmp2[tmp2=="T14"]<-"T13"
+tmp2[tmp2=="T15"]<-"T14"
+
+paste(tmp2, tmp[c(FALSE, TRUE)], sep="_")->tmp
+rm(tmp2)
+return$trait<-tmp
+}
+
+tmp<-return[order(return$effsize),]
+tmp$trait<-factor(tmp$trait, levels=unique(tmp$trait))
+
+
+p<-ggplot(tmp)+
+  geom_segment(aes(y=trait, x=effsize, xend=conf.high), linewidth=2)+
+  geom_segment(aes(y=trait, x=conf.low, xend=effsize), linewidth=2)+
+  geom_vline(xintercept = 0, linetype="longdash")+
+  geom_point(aes(y=trait, x=effsize, fill=effsize), color="black", size=20, stroke=3, shape=21, show.legend = FALSE )+
+  scale_fill_gradient2(low="blue", high="red")+
+  geom_point(data=return[return$p.value<0.05,], aes(y=trait, x=effsize), shape=8, size=5, show.legend = FALSE, stroke=2)+
+  theme_minimal()+
+  labs(x="Effect size")+
+  theme(axis.title = element_text(size=80),
+        axis.title.y = element_blank(),
+        axis.text = element_text(size=80),
+        plot.title = element_text(size=50),
+        aspect.ratio = 4)
+  
+
+tiff(filename= "FigS5b_all_effsizes_traits.tiff", width=1400, height=5050)
+plot(p)
+dev.off()
+
+p<-ggplot(tmp[(nrow(tmp)-21):nrow(tmp),])+
+  geom_segment(aes(y=trait, x=effsize, xend=conf.high), linewidth=2)+
+  geom_segment(aes(y=trait, x=conf.low, xend=effsize), linewidth=2)+
+  geom_vline(xintercept = 0, linetype="longdash")+
+  geom_point(aes(y=trait, x=effsize, fill=effsize), color="black", size=20, stroke=3, shape=21, show.legend = FALSE )+
+ # scale_fill_gradient2(low="blue", high="red")+
+  scale_fill_viridis_c()+
+  theme_minimal()+
+  labs(x="Effect size")+
+  theme(axis.title = element_text(size=80),
+        axis.title.y = element_blank(),
+        axis.text = element_text(size=80),
+        plot.title = element_text(size=50),
+        aspect.ratio = 4)
+  
+
+tiff(filename= "FigS5b_top_effsizes_traits.tiff", width=1000, height=1800)
+plot(p)
+dev.off()
+
+rownames(aggregated)%>%stringr::str_replace_all("_A", "_I")%>%stringr::str_replace_all("_B", "_II")%>%stringr::str_replace_all("_C", "_III")%>%stringr::str_replace_all("_D", "_IV")->rownames(aggregated)
+tmp$trait%>%stringr::str_replace_all("_A", "_I")%>%stringr::str_replace_all("_B", "_II")%>%stringr::str_replace_all("_C", "_III")%>%stringr::str_replace_all("_D", "_IV")->tmp$trait
+
+ComplexHeatmap::Heatmap(as.matrix(aggregated[rownames(aggregated)%in%tmp$trait[(nrow(tmp)-30):nrow(tmp)],]), rect_gp=gpar(col="grey", lwd=0.1), column_labels = c("ITJ-1", "ITJ-2", "ITJ-3"), column_names_rot =45, row_names_gp = gpar(fontsize=60), column_names_gp = gpar(fontsize=60), row_names_max_width = unit(12, "cm") , row_dend_width = unit(4, "cm"), row_dend_gp = gpar(lwd=3), column_dend_gp = gpar(lwd=3),
+        heatmap_legend_param = list(
+        title = "Mean\ntrajectory\nprobability\n", 
+        title_gp = gpar(fontsize=50),
+        labels_gp=gpar(fontsize=50),
+        legend_height=unit(10, "cm"),
+        grid_width=unit(2, "cm")
+    ) )->p
+
+
+tiff(filename="FigS5b_heatmap_Immunotrait_trajectories_by_effsize.tiff", width=900, height=2200)
+draw(p,  heatmap_legend_side="right" )
+dev.off()
+
+
+
+ComplexHeatmap::Heatmap(as.matrix(aggregated[rownames(aggregated)%in%tmp$trait[(nrow(tmp)-21):nrow(tmp)],]), rect_gp=gpar(col="grey", lwd=0.1), column_labels = c("ITJ-1", "ITJ-2", "ITJ-3"), column_names_rot =45, row_names_gp = gpar(fontsize=60), column_names_gp = gpar(fontsize=60), row_names_max_width = unit(12, "cm") , row_dend_width = unit(4, "cm"), row_dend_gp = gpar(lwd=3), column_dend_gp = gpar(lwd=3),
+        heatmap_legend_param = list(
+        title = "Mean\ntrajectory\nprobability\n", 
+        title_gp = gpar(fontsize=50),
+        labels_gp=gpar(fontsize=50),
+        legend_height=unit(10, "cm"),
+        grid_width=unit(2, "cm")
+    ) )->p
+
+
+tiff(filename="FigS5b_heatmap_Immunotrait_trajectories_by_effsizev2.tiff", width=900, height=2200)
+draw(p,  heatmap_legend_side="right" )
+dev.off()
+
+
+lapply(names(trajectories), FUN=function(x){
+ cbind("celltype"=rep(x, 114), 
+       as.data.frame(trajectories[[x]][["cld"]]@traj),
+       "Immunotrait"=factor(leiden$membership),
+       "patient"=trajectories[[x]][["cld"]]@idAll)
+})%>%rbindlist()%>%melt(id.vars = c("celltype", "Immunotrait", "patient"), measure.vars = c("t1", "t2", "t3"))->traj_imputed_reduced_metacluster
+
+
+if(FALSE){
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M9"]<-"M4"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="B12"]<-"B2"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="B8"]<-"B2"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="B13"]<-"B3"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="B10"]<-"B3"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="T9"]<-"T4"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M15"]<-"M5"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M8"]<-"others"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M6"]<-"others"
+#rename
+
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M14"]<-"ILC2"
+
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="B9"]<-"B8"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="B11"]<-"B9"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="B14"]<-"B10"
+
+
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M7"]<-"M6"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M10"]<-"M7"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M11"]<-"M8"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M12"]<-"M9"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="M13"]<-"M10"
+
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="T10"]<-"T9"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="T11"]<-"T10"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="T12"]<-"T11"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="T13"]<-"T12"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="T14"]<-"T13"
+traj_imputed_reduced_metacluster$celltype[traj_imputed_reduced_metacluster$celltype=="T15"]<-"T14"
+}
+
+dat<-traj_imputed_reduced_metacluster[traj_imputed_reduced_metacluster$celltype %in% (stringr::str_remove(return$trait[(nrow(return)-20):nrow(return)], "_A")%>%stringr::str_remove("_B")%>%stringr::str_remove("_C")%>%stringr::str_remove("_D")%>%unique()),]
+
+dat$celltype<-factor(dat$celltype, levels = (stringr::str_remove(return$trait[(nrow(return)-20):nrow(return)], "_A")%>%stringr::str_remove("_B")%>%stringr::str_remove("_C")%>%stringr::str_remove("_D")%>%unique())[12:1])
+
+dat$variable<-stringr::str_replace(dat$variable, "t", "TP")
+
+my_text_colors <- list(ggtext::element_markdown(color="black"),ggtext::element_markdown(color="black"),ggtext::element_markdown(color="black"),ggtext::element_markdown(color="black"),ggtext::element_markdown(color="black"),ggtext::element_markdown(color="black"),ggtext::element_markdown(color="white"),ggtext::element_markdown(color="white"),ggtext::element_markdown(color="white"),ggtext::element_markdown(color="white"),ggtext::element_markdown(color="white"),ggtext::element_markdown(color="white"))
+
+#with subscript
+levels<-levels(dat$celltype)
+dat$celltype<-paste("Traj.<sub>", dat$celltype, "</sub>")
+
+dat$celltype<-factor(dat$celltype, levels=paste("Traj.<sub>", levels, "</sub>"))
+
+#with bindestrich
+levels<-levels(dat$celltype)
+dat$celltype<-paste("Traj.-", dat$celltype)
+
+dat$celltype<-factor(dat$celltype, levels=paste("Traj.-", levels))
+
+#with profiles
+levels<-levels(dat$celltype)
+dat$celltype<-paste(dat$celltype, "profiles")
+
+dat$celltype<-factor(dat$celltype, levels=paste( levels, "profiles"))
+
+
+ p<-ggplot(data = dat, aes(x=variable, y=value, group=Immunotrait))+
+#  geom_line(alpha=0.2, color="grey", linewidth=2)+
+
+    geom_smooth(aes(group=Immunotrait, color=Immunotrait), se=FALSE, linewidth=4)+
+   facet_wrap2(~celltype, scales = "free", ncol = 6, strip = strip_themed(
+    background_x = elem_list_rect(fill = rev(viridis::viridis(12))),
+    text_x=my_text_colors
+    ))+
+
+   scale_color_manual(values=c("#278046", "#FAD510", "#7E3F8F", "#354823", "#1E1E1E"), name="ITJ")+
+   scale_x_discrete(expand=c(0.05, 0.05))+
+   scale_y_continuous(expand=c(0.05, 0.05))+
+   labs(x="Timepoint")+
+   ggnewscale::new_scale_color()+
+   geom_point(aes(x=Inf, y=Inf, color=value), alpha=0)+
+   scale_color_viridis_b(
+  name = "Effect\nsize",
+  limits = range(return$effsize[(nrow(return)-20):nrow(return)])
+)+   theme_minimal()+
+   theme(text=element_text(size=80),
+         aspect.ratio = 1, 
+         axis.title.y = element_blank(),
+       #   strip.text = ggtext::element_markdown() ,
+         panel.spacing = unit(3, "cm"),
+         axis.text.x = element_text(vjust=-1),
+         axis.title.x = element_text(vjust=-1, color="white"),
+        legend.box.margin = margin(0, 0, 0, 2, "cm"),
+        legend.key.size = unit(7, "lines"),
+        legend.justification = c("left", "center"))
+ 
+ g <- ggplotGrob(p)
+ 
+idx <- which(g$layout$name == "guide-box-right")
+legends <- g$grobs[[idx]]
+
+# Move the *first* legend upward by 5%
+legends$grobs[[1]]$vp$y <- unit(1.15, "npc")
+legends$grobs[[1]]$vp$justification <- c(0.5, 0.5)
+
+# Write back
+g$grobs[[idx]] <- legends
+
+ 
+tiff(filename= "Fig5_top_trajectories_traits.tiff", width=4500, height=1600)
+plot(ggplotify::as.ggplot(g))
+dev.off()
+
+leiden_clusters_imputed_reduced<-leiden
+
+metadeconf_out_immunotraits$stdOutput->metadeconfoundR_long
+
+  rename_metadeconfound_output<-function(metadeconf, new_names){
+    
+  metadeconf$metaVariable<-new_names$new_name[match(metadeconf$metaVariable, new_names$old_name)]
+  
+  stringr::str_split(metadeconf$status, ": ")->tmp
+  for(i in 1:length(tmp)){
+    if(length(tmp[[i]])==1){
+      next
+    } else{
+       stringr::str_split(tmp[[i]][[2]], ", ")->tmp2
+       stringr::str_flatten(new_names$new_name[match(unlist(tmp2), new_names$old_name)], collapse = ", ")->tmp2
+       tmp[[i]]<-paste(tmp[[i]][[1]], tmp2, sep=": ")
+    }
+  }
+  
+  metadeconf$status<-unlist(tmp)
+  return(metadeconf)
+  
+}
+
+  new_names_linebreak<-data.frame("old_name"=c("Surgery multiple", "Urban residence", "Steroids neonatal", "Solid food DOL", "Fever episodes", "Influenza Hx mother", "Multiple birth", "URTI maternal", "ABx postpartum mother", "Sepsis BC pos.", "Surgery single", "ABx duration post discharge", "Breastfeeding neonatal", "Influenza vaccine maternal"),
+"new_names"=c("Surgery\nmultiple", "Urban\nresidence", "Steroids\nneonatal", "Solid food\nDOL", "Fever\nepisode", "Influenza HX\nmother", "Multiple\nbirth", "URTI\nmaternal", "ABx postpartum\nmother", "Sepsis\nBC pos.", "Surgery\nsingle", "ABx duration\npost discharge", "Breastfeeding\nneonatal", "Influenza vaccine\nmaternal"))
+
+metadata_rename$new_name[metadata_rename$new_name%in%new_names_linebreak$old_name]<-new_names_linebreak$new_name[match(metadata_rename$new_name[metadata_rename$new_name%in%new_names_linebreak$old_name], new_names_linebreak$old_name)]
+  
+rename_metadeconfound_output(metadeconfoundR_long, metadata_rename)->metadeconfoundR_long
+
+source("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/circle_graph_kilian.R", echo=TRUE)
+
+library(ggraph)
+metadeconfoundR_long$feature<-as.character(metadeconfoundR_long$feature)
+metadeconfoundR_long$feature[metadeconfoundR_long$feature=="Immunotrait.1"]<-"ITJ-1"
+metadeconfoundR_long$feature[metadeconfoundR_long$feature=="Immunotrait.2"]<-"ITJ-2"
+metadeconfoundR_long$feature[metadeconfoundR_long$feature=="Immunotrait.3"]<-"ITJ-3"
+metadeconfoundR_long$feature<-factor(metadeconfoundR_long$feature)
+
+circle_graph(metadeconfoundR_long, linewidth = 3, size_text=18, size_nodepoint = 35, stroke_sig = 5, backbone=c("ITJ1"= "#278046", "ITJ2"= "#FAD510", "ITJ3"="#7E3F8F"))->circles_immunotype
+
+ggsave(plot=circles_immunotype[[1]], filename="Fig5_Trait1_circle.tiff", bg="transparent", width = 35, height=36)
+ggsave(plot=circles_immunotype[[2]], filename="Fig5_Trait2_circle.tiff", bg="transparent", width = 35, height=36)
+ggsave(plot=circles_immunotype[[3]], filename="Fig5_Trait3_circle.tiff", bg="transparent", width = 35, height=36)
+
+
+
+#new plot for Fig 5 - effect size of cell types on metadata variables
+  getVariableType <- function (values, variable) {
+    if (is.numeric (values) &&
+        all (values %in% c (0, 1)) &&
+        !(!is.null (typeContinuous) &&
+          variable %in% typeContinuous) &&
+        !(!is.null (typeCategorical) && variable %in% typeCategorical)) {
+      return ("binary") # treat as binary
+    } # this fulfils criteria of binary (0, 1) and not in the special cases
+    else if ((is.numeric (values) ||
+              (!is.null (typeContinuous) &&
+               variable %in% typeContinuous)) &&
+             !(!is.null (typeCategorical) && variable %in% typeCategorical)) {
+      return ("continuous") # treat as continuous
+    } # this fulfils criteria of not being restricted to 0, 1; still numeric,
+        # or guaranteed continuous (redundant?); and not categorical
+    else {
+      return ("categorical") # treat as categorical
+    } # default as categorical
+  }
+  
+ featureMat<-as.data.frame(freq_imputed[c(2:44, 46)][freq_imputed$timepoint==1,])
+ metaMat<-metadata_PatID
+ metaMat$chip_id<-NULL
+ metaMat$MHH_PatID<-NULL
+ metaMat$timepoint_cat<-NULL
+ colnames(metaMat)[colnames(metaMat)=="antibiotics_in anamnesis_treatment_duration"]<-"antibiotics_in_anamnesis_treatment_duration"
+rownames(featureMat)<-1:114
+rownames(metaMat)<-1:114
+  metadeconfoundR::MetaDeconfound(featureMat = featureMat, metaMat = metaMat, logistic=FALSE, returnLong = TRUE, robustCutoff = 5)->metadeconf_TP1
+  
+   featureMat<-as.data.frame(freq_imputed[c(2:44, 46)][freq_imputed$timepoint==2,])
+rownames(featureMat)<-1:114
+  metadeconfoundR::MetaDeconfound(featureMat = featureMat, metaMat = metaMat, logistic=FALSE, returnLong = TRUE, robustCutoff = 5)->metadeconf_TP2
+  
+     featureMat<-as.data.frame(freq_imputed[c(2:44, 46)][freq_imputed$timepoint==3,])
+rownames(featureMat)<-1:114
+  metadeconfoundR::MetaDeconfound(featureMat = featureMat, metaMat = metaMat, logistic=FALSE, returnLong = TRUE, robustCutoff = 5 )->metadeconf_TP3
+  
+  
+  metadeconf_TP1$timepoint<-rep("TP1", nrow(metadeconf_TP1))
+  metadeconf_TP2$timepoint<-rep("TP2", nrow(metadeconf_TP2))
+  metadeconf_TP3$timepoint<-rep("TP3", nrow(metadeconf_TP3))
+  
+  output<-rbind(metadeconf_TP1, metadeconf_TP2, metadeconf_TP3)
+  
+  output<-output[output$metaVariable%in%metadeconf_out_immunotraits$stdOutput[metadeconf_out_immunotraits$stdOutput$status!="NS",]$metaVariable,]
+  output<-output[output$feature%in%c("T3", "T4", "T6", "M3", "T2", "B8", "T10", "M1", "ILC2", "B5", "ST3", "B3"),]
+  
+stringr::str_replace(metadata_rename$new_name, "\n", " ")->metadata_rename$new_name
+  
+rename_metadeconfound_output(output, metadata_rename)->output
+
+p<-ggplot(output, aes(x = feature, y = metaVariable)) +
+  geom_point(aes(color = Ds,
+                 size = abs(Ds)),  # size reflects magnitude
+             alpha = 0.8) +
+  scale_color_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0) +
+  facet_wrap(~ timepoint, ncol = 3) +
+  scale_size_continuous(range=c(10,20))+
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size=60),
+    strip.text = element_text(face = "bold", size=50),
+    axis.text.y = element_text(size=60),
+    legend.text = element_text(size=60),
+    legend.title = element_text(size=60),
+    axis.title = element_text(size=50),
+    legend.key.size = unit(4, "cm"),
+    panel.spacing.x = unit(2, "cm")
+  ) +
+  labs(
+    x = "Cell Type",
+    y = "Metadata Variable",
+    color = "Effect Size",
+    size = "Magnitude"
+  )
+
+ggsave(plot=p, filename="Fig5_cell_subset_effsizes.tiff", bg="transparent", width = 55, height=23, limitsize = FALSE)
+
+output <- output %>%
+  mutate(signif = ifelse(Ps < 0.05, 6, 0),
+         significance = ifelse(Ps < 0.05, "Significant", "Not significant"))
+
+output<-na.omit(output)
+output$metaVariable[output$metaVariable=="Fever episode"]<-"Fever episodes"
+output$metaVariable[output$metaVariable=="Influenza vaccine maternal"]<-"Influenza vacc.\nmaternal"
+
+output$feature<-factor(as.character(output$feature), levels = c("T2", "T3", "T4", "T6", "T10", "B3", "B5", "B8", "M1", "M3", "ILC2", "ST3"))
+output$metaVariable<-factor(as.character(output$metaVariable), levels = c("Influenza vacc.\nmaternal", "BW", "GA", "BMI birth", "AIS", "GDM", "BPD", "LONS", "Dysbiosis", "Steroids neonatal", "Surgery multiple", "Surgery single", "Urban residence", "Pets", "Smoker in family", "Gastroenteritis", "Fever episodes", "Lockdown_S", "Lockdown_I", "Lockdown_P"))
+
+#cluster results
+tmp<-output[c(1,2,5, 7)]
+pivot_wider(tmp, names_from=c(1, 4), values_from = c(3))->tmp_meta
+
+tmp<-output[c(1,2,5, 7)]
+pivot_wider(tmp, names_from=c(2, 4), values_from = c(3))->tmp_subset
+
+hclust(dist(as.data.frame(tmp_meta[2:ncol(tmp_meta)])))->meta_clust
+hclust(dist(as.data.frame(tmp_subset[2:ncol(tmp_meta)])))->subset_clust
+
+output$feature<-factor(as.character(output$feature), levels = c(tmp_subset$feature[subset_clust$order]))
+output$metaVariable<-factor(as.character(output$metaVariable), levels = c(tmp_meta$metaVariable[meta_clust$order]))
+
+
+
+p<-ggplot(output, aes(x = timepoint, y = metaVariable)) +
+  geom_point(aes(fill = Ds,
+                 size = abs(Ds), # size reflects magnitude
+                 stroke=signif,
+                 shape=significance),  
+             alpha = 0.8, color="black") +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0, name="Effect size") +
+  facet_wrap(~ feature, ncol = 12) +
+  scale_size_continuous(range=c(5,17))+
+scale_shape_manual(
+  name = "P-value\n<0.05",
+  values = c("Significant" = 21, "Not significant" = 21),
+  breaks = "Significant",     # only show "Significant" in legend
+  labels = ""                 # remove label text if you want only the point
+) +
+guides(
+  shape = guide_legend(override.aes = list(stroke = 6, size = 10, fill = "white", color = "black"),  order=2), 
+  size=guide_legend(order=3),
+  fill=guide_colorbar(order=1)
+) +      # border color
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, size=50, color="black"),
+    strip.text = element_text(face = "bold", size=60),
+    axis.text.y = element_text(size=50, color="black"),
+    legend.text = element_text(size=50),
+    legend.title = element_text(size=50, hjust=0.5),
+    axis.title = element_blank(),
+    legend.key.size = unit(4, "cm"),
+    panel.spacing.x = unit(1, "cm"),
+    legend.position = "bottom",
+    legend.spacing.x = unit(3, "cm"),
+    legend.title.position = "top",
+    legend.direction = "horizontal"
+  ) +
+  labs(
+    x = "Timepoint",
+    y = "Metadata Variable",
+    color = "Effect Size",
+    size = "Magnitude"
+  )
+
+p_clean <- p + theme(plot.margin = margin(0,1,0,0))
+
+dendro_col_clean <- ggdendro::ggdendrogram(subset_clust, rotate = FALSE, size = 2) +
+                      theme_void() + 
+                      theme(plot.margin = margin(0,0,0,0))
+
+dendro_row_clean <- ggdendro::ggdendrogram(meta_clust) +
+                      theme_void() +
+                      theme(plot.margin = margin(0, 0, 0, 0))+
+                      coord_flip()
+
+
+drow_data <- dendro_data(as.dendrogram(meta_clust), type = "rectangle")
+dendro_row_clean <- ggplot() +
+  geom_segment(data = drow_data$segments,
+               aes(x = x, y = y, xend = xend, yend = yend),
+               linewidth = 2) +          # <<< THICKNESS HERE
+                theme_void()+
+                coord_flip()
+
+
+dcol_data <- dendro_data(as.dendrogram(subset_clust), type = "rectangle")
+dendro_col_clean <- ggplot() +
+  geom_segment(data = dcol_data$segments,
+               aes(x = x, y = y, xend = xend, yend = yend),
+               linewidth = 2) +          # <<< THICKNESS HERE
+                theme_void()
+
+
+area_coltop  <- area(t = 1, l = 1, b = 1, r = 1)  # top-left
+area_empty   <- area(t = 1, l = 2, b = 1, r = 2)  # top-right
+area_main    <- area(t = 2, l = 1, b = 2, r = 1)  # bottom-left
+area_rowright<- area(t = 2, l = 2, b = 2, r = 2)  # bottom-right
+
+final_plot <- 
+dendro_col_clean +
+  (ggplot() + theme_void()) +
+  p_clean +
+ free(dendro_row_clean) +
+  plot_layout(
+    design = c(area_coltop,
+               area_empty,
+               area_main,
+               area_rowright),
+    widths  = c(7, 0.5),   # main plot wide, dendrogram narrow
+    heights = c(0.5, 7)
+  )
+
+
+
+ggsave(plot=final_plot, filename="Fig5_cell_subset_effsizes_alternative.tiff", bg="transparent", width = 33.5, height=26, limitsize = FALSE)
+ggsave(plot=dendro_col_clean, filename="dendor_col.tiff", bg="transparent", width = 33.5, height=3, limitsize = FALSE)
+ggsave(plot=dendro_row_clean, filename="dendor_row.tiff", bg="transparent", width = 3, height=26, limitsize = FALSE)
+
+
+```
+
+```{r class switch and immunotrait}
+
+
+new_names <- read_excel("Table S2_20240526 (subcluster label).xlsx")
+#freq_imputed <- readRDS("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/freq_imputed.rds")
+
+
+set.seed(12345)
+
+#construct PCAs
+prcomp(freq_imputed[c(2:44, 46)][freq_imputed$timepoint==3,])->pca
+
+plotElbow <- function(pca){
+  eigenvalue <- data.frame(pcs = 1:length(pca$sdev),
+                           variance.percent = (pca$sdev^2)/sum(pca$sdev^2),
+                           cumulative.variance.percent = cumsum((pca$sdev^2)/sum(pca$sdev^2)))
+  eigenvalue<-eigenvalue[1:30,]
+ p<- ggplot(eigenvalue, aes(pcs, variance.percent))+ 
+    geom_bar(stat = "identity")+
+    geom_line(aes(pcs, variance.percent), linewidth=2) +
+    geom_point(aes(pcs, variance.percent), size=6) +
+    geom_line(aes(pcs, cumulative.variance.percent), colour= "grey", linewidth=2) + 
+    geom_point(aes(pcs, cumulative.variance.percent), colour= "grey", size=6) + 
+    scale_x_continuous(breaks=c(1:nrow(eigenvalue)))+
+    xlab("Dimensions") +
+    ylab("Percentage of explained variances") +
+    theme_bw()+
+    geom_vline(xintercept=5, linewidth=3)+
+    theme(axis.text = element_text(size=50),
+          axis.title = element_text(size=50))
+ 
+ return(p)
+}
+
+plotElbow(pca) -> p
+
+tiff(filename="Figs5c_elbow_plot.tiff", width=2200, height=1200)
+plot(p)
+dev.off()
+
+
+#select number of pcs
+k=5
+
+#make graph
+
+bluster::makeKNNGraph(pca$x[,1:k], k=11)->knn
+
+#leiden clustering
+
+igraph::cluster_leiden(knn, n_iterations = 10000,resolution_parameter = 0.05, objective_function = c("CPM"))->leiden
+
+leiden$membership[leiden$membership==1]<-5
+leiden$membership[leiden$membership==2]<-1
+leiden$membership[leiden$membership==5]<-2
+
+tiff(filename="Figs5c_knn_graph.tiff", width=4000, height=4000)
+set.seed(12345)
+igraph::plot.igraph(knn, vertex.color=leiden$membership, vertex.label.cex=8, vertex.size=10, loop.size = 1, edge.width=8)->p
+dev.off()
+
+set.seed(1234)
+uwot::umap(pca$x[,1:k], n_neighbors = 11)->umap_opt
+
+
+p<-ggplot(as.data.frame(cbind(umap_opt, "cluster"=factor(leiden$membership))),  aes(x = V1, y = V2, color=factor(cluster)))+ 
+  geom_point(size=10) + 
+  theme_classic()+
+  labs(y="UMAP2", x="UMAP1")+
+  theme(aspect.ratio = 1, 
+        legend.title = element_text(size=80),
+        axis.text=element_text(size=50),
+        axis.title = element_text(size=80),
+        legend.text = element_text(size=80),
+         axis.line = element_line(linewidth=2))+
+  scale_color_manual(labels = c("A", "B"), values = c("#F8766D", "#00BFC4")) +
+  guides(color = guide_legend(override.aes = list(size = 20), title="Cluster"))
+
+tiff(filename="Figs5c_umap_immunotypes.tiff", width=1200, height=1200)
+plot(p)
+dev.off()
+
+
+p<-ggplot(as.data.frame(cbind(pca$x, "cluster"=factor(leiden$membership))),  aes(x = PC2, y = PC1, color=factor(cluster)))+ 
+  geom_point(size=10) + 
+  theme_classic()+
+  labs(y="PCA2", x="PCA1")+
+ theme(aspect.ratio = 1, 
+        legend.title = element_blank(),
+        axis.text=element_text(size=50),
+        axis.title = element_text(size=80),
+        legend.text = element_text(size=80),
+         axis.line = element_line(linewidth=2))+
+  guides(color = guide_legend(override.aes = list(size = 20)))
+
+tiff(filename="Figs5c_pca_immunotypes.tiff", width=1200, height=1200)
+plot(p)
+dev.off()
+
+
+pheatmap(pca$rotation[,1:k], cluster_cols = FALSE, color=colorRampPalette(c("blue", "white", "red"))(10), fontsize = 35, cellwidth = 60, cellheight=34, filename="Figs5c_heatmap_Immunotype_PCA_loadings.tiff")
+
+
+tmp<-apply(freq_imputed[c(2:44, 46)], 2, FUN=function(x){(x-mean(x))/sd(x)})
+
+as.data.frame(t(aggregate(tmp[freq_imputed$timepoint==3,], b=list("cluster"=leiden$membership), FUN=mean)))->aggregated
+
+
+colnames(aggregated)<-aggregated[1,]
+aggregated<-aggregated[-1,]
+
+pheatmap(aggregated, color=colorRampPalette(c("blue", "white", "red"))(10), cluster_cols=FALSE, fontsize = 35, cellwidth = 60, cellheight=34, filename="Figs5c_heatmap_Immunotype_imp_cells.tiff")
+
+
+#alluvial
+cbind("Immunotrait"=leiden_clusters_imputed_reduced$membership, "Immunotype"=leiden$membership)->tmp
+
+tmp<-as.data.frame(tmp)
+
+tmp%>%group_by(Immunotrait, Immunotype)%>%summarize(freq=n())->tmp
+
+tmp$Immunotrait<-factor(tmp$Immunotrait, levels=c(1,2,3))
+tmp$Immunotype<-factor(tmp$Immunotype, levels=c(1,2))
+
+library(ggalluvial)
+
+p<-ggplot(data = tmp,
+       aes(axis1 = Immunotrait, axis2 = Immunotype,
+           y = freq)) +
+  theme_void()+
+  scale_x_discrete(limits = c("Immunotrait", "Immunotype"), expand = c(.2, .05)) +
+  xlab("") +
+  geom_alluvium(aes(fill = Immunotrait), alpha=0.9, width=0.2) +
+  geom_stratum(width=0.2) +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), cex=50) +
+  scale_fill_manual(values=c("1"= "#278046", "2"= "#FAD510","3"= "#CB2314", "4"= "#060270"))+
+  theme_minimal()+
+  scale_y_continuous(sec.axis = sec_axis(~.,
+                    name = "Immunotype"))+
+  ylab("Immuotrait")+
+  theme(text = element_text(size=80),
+        axis.text.x=element_blank(),
+        legend.position="none",
+        aspect.ratio = 1,
+        axis.text.y = element_blank(),
+        axis.title.y.left = element_text(vjust=-4),
+        axis.title.y.right = element_text(vjust=-4))
+
+tiff(filename="Figs5c_alluvial.tiff", width=1200, height=1000)
+plot(p)
+dev.off()
+
+metadata_PatID<-metadata_PatID[order(metadata_PatID$MHH_PatID),]
+
+metaMat<-metadata_PatID
+metaMat$MHH_PatID<-NULL
+metaMat$chip_id<-NULL
+metaMat$timepoint<-NULL
+metaMat$timepoint_cat<-NULL
+
+for(i in colnames(metaMat)){
+  if(i%in%typeContinuous){
+    metaMat[[i]]<-as.numeric(unlist(metaMat[[i]]))
+  } else if (i%in%typeCategorical){
+    metaMat[[i]]<-as.character(unlist(metaMat[[i]]))
+  } else  {
+    metaMat[[i]]<-as.numeric(unlist(metaMat[[i]]))
+  }
+}
+
+metaMat$pre_covid_sum<-NULL
+metaMat$pre_covid_infant<-NULL
+metaMat$pre_covid_ss<-NULL
+metaMat$immunotrait<-NULL
+metaMat$Immunotype<-NULL
+
+metaMat$diet_PatID_first_months_categories<-metadata_PatID$diet_PatID_first_months_categories
+
+rownames(metaMat)<-1:nrow(metaMat)
+
+fastDummies::dummy_columns(as.vector(leiden$membership))[2:3]->featureMat
+colnames(featureMat)<-c("Type 1", "Type 2")
+
+
+
+metadeconfoundR::MetaDeconfound(featureMat = featureMat, metaMat =metaMat , robustCutoff=1, typeCategorical = typeCategorical, typeContinuous = typeContinuous, 
+                                collectMods=TRUE, logistic = TRUE, returnLong = TRUE, logLevel = "ERROR", doConfs = -1)->metadeconf_out_immunotypes
+
+BuildHeatmap(metadeconf_out_immunotypes$stdOutput)->p
+p+theme(text=element_text(size=20), axis.text.x = element_text(size=15))
+
+metadeconf_out_immunotypes$stdOutput->metadeconfoundR_long
+
+  rename_metadeconfound_output<-function(metadeconf, new_names){
+    
+  metadeconf$metaVariable<-new_names$new_name[match(metadeconf$metaVariable, new_names$old_name)]
+  
+  stringr::str_split(metadeconf$status, ": ")->tmp
+  for(i in 1:length(tmp)){
+    if(length(tmp[[i]])==1){
+      next
+    } else{
+       stringr::str_split(tmp[[i]][[2]], ", ")->tmp2
+       stringr::str_flatten(new_names$new_name[match(unlist(tmp2), new_names$old_name)], collapse = ", ")->tmp2
+       tmp[[i]]<-paste(tmp[[i]][[1]], tmp2, sep=": ")
+    }
+  }
+  
+  metadeconf$status<-unlist(tmp)
+  return(metadeconf)
+  
+}
+
+  new_names_linebreak<-data.frame("old_name"=c("Surgery multiple", "Urban residence", "Steroids neonatal", "Solid food DOL", "Fever episodes", "Influenza Hx mother", "Multiple birth", "URTI maternal", "ABx postpartum mother", "Sepsis BC pos.", "Surgery single", "ABx duration post discharge", "Breastfeeding neonatal", "Influenza vaccine maternal", "CMV infection maternal", "Abx post discharge"),
+"new_names"=c("Surgery\nmultiple", "Urban\nresidence", "Steroids\nneonatal", "Solid food\nDOL", "Fever\nepisode", "Influenza HX\nmother", "Multiple\nbirth", "URTI\nmaternal", "ABx postpartum\nmother", "Sepsis\nBC pos.", "Surgery\nsingle", "ABx duration\npost discharge", "Breastfeeding\nneonatal", "Influenza vaccine\nmaternal", "CMV infection\nmaternal", "ABx post\ndischarge"))
+
+metadata_rename$new_name[metadata_rename$new_name%in%new_names_linebreak$old_name]<-new_names_linebreak$new_name[match(metadata_rename$new_name[metadata_rename$new_name%in%new_names_linebreak$old_name], new_names_linebreak$old_name)]
+  
+rename_metadeconfound_output(metadeconfoundR_long, metadata_rename)->metadeconfoundR_long
+
+source("M:/ag-viemann/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/circle_graph_kilian.R", echo=TRUE)
+
+library(ggraph)
+circle_graph(metadeconfoundR_long, linewidth = 3, size_text=18, size_nodepoint = 35, stroke_sig = 5, backbone=c("Type 1"= "#F8766D", "Type 2"= "#00BFC4"))->circles_immunotype
+
+ggsave(plot=circles_immunotype[[2]], filename="Figs5c_Type2_circle.tiff", bg="transparent", width = 35, height=35)
+
+colnames(metaMat)[colnames(metaMat)=="antibiotics_in anamnesis_treatment_duration"]<-"antibiotics_in.anamnesis_treatment_duration"
+
+as.data.frame(featureMat$`Type 1`)->tmp
+colnames(tmp)<-"Type 1"
+eff_size_plot(metaMat=metaMat, featureMat = tmp, top = 10, signif_only = FALSE, logistic = TRUE, filename="Figs5c_effsize_Type1_top10.tiff",  rename = metadata_rename)
+
+eff_size_plot(metaMat=metaMat, featureMat = tmp, signif_only = FALSE, logistic = TRUE, filename="Figs5c_effsize_Type1.tiff",  rename = metadata_rename)
+
+eff_size_plot(metaMat=as.data.frame(freq_imputed[2:46][freq_imputed$timepoint==3,]), featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_Type1_signif_celltypes.tiff")
+
+eff_size_plot(metaMat=as.data.frame(freq_imputed[2:46][freq_imputed$timepoint==3,]), featureMat = tmp, signif_only = FALSE, logistic = TRUE, filename="Figs5c_effsize_Type1_celltypes.tiff")
+
+eff_size_plot(metaMat=metaMat, featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_Type1_signif_only.tiff", rename = metadata_rename)
+
+as.data.frame(featureMat$`Type 2`)->tmp
+colnames(tmp)<-"Type 2"
+eff_size_plot(metaMat=metaMat, featureMat = tmp, top = 10, signif_only = FALSE, logistic = TRUE, filename="Figs5c_effsize_Type2_top10.tiff",   rename = metadata_rename)
+
+eff_size_plot(metaMat=metaMat, featureMat = tmp,signif_only = FALSE, logistic = TRUE, filename="Figs5c_effsize_Type2.tiff", rename = metadata_rename)
+
+eff_size_plot(metaMat=as.data.frame(freq_imputed[2:46][freq_imputed$timepoint==3,]), featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_Type2_signif_celltypes.tiff")
+
+eff_size_plot(metaMat=as.data.frame(freq_imputed[2:46][freq_imputed$timepoint==3,]), featureMat = tmp, signif_only = FALSE, logistic = TRUE, filename="Figs5c_effsize_Type2_celltypes.tiff")
+
+eff_size_plot(metaMat=metaMat, featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_Type2_signif_only.tiff", rename = metadata_rename)
+
+#second eff size appraoch using MWU test
+
+as.data.frame(cbind(freq_imputed[2:44][freq_imputed$timepoint==3,], freq_imputed[,46][freq_imputed$timepoint==3,], "cluster"=featureMat$`Type 1`))->data
+
+return<-matrix(nrow=ncol(data)-1, ncol=4)
+
+for(i in 1:(ncol(data)-1)){
+  
+  t<-wilcox.test(data[,i]~data$cluster, p.adjust="fdr")
+
+  fml<-as.formula(paste(colnames(data)[i], "~ cluster"))
+  
+  ef<-rstatix::wilcox_effsize(data, fml, ci=TRUE)
+  
+  return[i, 1]<-t$p.value
+  return[i, 2]<-ef$effsize
+  return[i, 3]<-ef$conf.low
+  return[i, 4]<-ef$conf.high
+}
+
+return<-as.data.frame(return)
+colnames(return)<-c("p.value", "effsize", "conf.low", "conf.high")
+return$trait<-colnames(data)[1:(ncol(data)-1)]
+
+return<-return[order(return$effsize),]
+return$trait<-factor(return$trait, levels = return$trait)
+
+
+
+#all
+p<-ggplot(return)+
+  geom_segment(aes(y=trait, x=effsize, xend=conf.high), linewidth=2)+
+  geom_segment(aes(y=trait, x=conf.low, xend=effsize), linewidth=2)+
+  geom_vline(xintercept = 0, linetype="longdash")+
+  geom_point(aes(y=trait, x=effsize, fill=effsize), color="black", size=20, stroke=3, shape=21, show.legend = FALSE )+
+  scale_fill_gradient2(low="blue", high="red")+
+  geom_point(data=return[return$p.value<0.05,], aes(y=trait, x=effsize), shape=8, size=5, show.legend = FALSE, stroke=2)+
+  theme_minimal()+
+  labs(x="Effect size")+
+  theme(axis.title = element_text(size=80),
+        axis.title.y = element_blank(),
+        axis.text = element_text(size=80),
+        plot.title = element_text(size=50),
+        aspect.ratio = 4)
+
+
+tiff(filename= "Figs5c_all_effsizes_types.tiff", width=1400, height=3500)
+plot(p)
+dev.off()
+
+#top 10 
+p<-ggplot(return[(nrow(return)-12):nrow(return),])+
+  geom_segment(aes(y=trait, x=effsize, xend=conf.high), linewidth=2)+
+  geom_segment(aes(y=trait, x=conf.low, xend=effsize), linewidth=2)+
+  geom_vline(xintercept = 0, linetype="longdash")+
+  geom_point(aes(y=trait, x=effsize, fill=effsize), color="black", size=20, stroke=3, shape=21, show.legend = FALSE )+
+  scale_fill_gradient2(low="blue", high="red")+
+  theme_minimal()+
+  labs(x="Effect size")+
+  theme(axis.title = element_text(size=80),
+        axis.title.y = element_blank(),
+        axis.text = element_text(size=80),
+        plot.title = element_text(size=50),
+        aspect.ratio = 1)
+  
+
+tiff(filename= "FigS5c_top_effsizes_types.tiff", width=1000, height=1000)
+plot(p)
+dev.off()
+
+
+
+#class switch analysis
+#define binary variables
+
+three.two<-rep(0, 114)
+three.two[leiden$membership==2&leiden_clusters_imputed_reduced$membership==3]<-1
+three.two[leiden_clusters_imputed_reduced$membership!=3]<-NA
+
+three.one<-rep(0, 114)
+three.one[leiden$membership==1&leiden_clusters_imputed_reduced$membership==3]<-1
+three.one[leiden_clusters_imputed_reduced$membership!=3]<-NA
+
+two.two<-rep(0, 114)
+two.two[leiden$membership==2&leiden_clusters_imputed_reduced$membership==2]<-1
+two.two[leiden_clusters_imputed_reduced$membership!=2]<-NA
+
+two.one<-rep(0, 114)
+two.one[leiden$membership==1&leiden_clusters_imputed_reduced$membership==2]<-1
+two.one[leiden_clusters_imputed_reduced$membership!=2]<-NA
+
+one.two<-rep(0, 114)
+one.two[leiden$membership==2&leiden_clusters_imputed_reduced$membership==1]<-1
+one.two[leiden_clusters_imputed_reduced$membership!=1]<-NA
+
+one.one<-rep(0, 114)
+one.one[leiden$membership==1&leiden_clusters_imputed_reduced$membership==1]<-1
+one.one[leiden_clusters_imputed_reduced$membership!=1]<-NA
+
+featureMat<-as.data.frame(cbind(three.two, three.one, two.two, two.one, one.two, one.one))
+
+
+
+metadeconfoundR::MetaDeconfound(featureMat = featureMat, metaMat =metaMat , robustCutoff=1, typeCategorical = typeCategorical, typeContinuous = typeContinuous, collectMods=TRUE, 
+                                logistic = TRUE, returnLong = FALSE, logLevel = "ERROR", doConfs = -1)->metadeconf_out_immunotypes_class_switch
+
+#source("Z:/AG Viemann_Geldner, Jonas/R/leiden clustering implementation/BuildHeatmap.R", echo=TRUE)
+#BuildHeatmap(metadeconf_out)
+
+as.data.frame(featureMat$three.one)->tmp
+colnames(tmp)<-"three.one"
+eff_size_plot(metaMat=metaMat, featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_three_one.tiff" , rename = metadata_rename, panel.height = 2.8)
+
+as.data.frame(featureMat$three.two)->tmp
+colnames(tmp)<-"three.one"
+eff_size_plot(metaMat=metaMat, featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_three_two.tiff", rename = metadata_rename, panel.height = 2.8)
+
+as.data.frame(featureMat$one.one)->tmp
+colnames(tmp)<-"three.one"
+eff_size_plot(metaMat=metaMat, featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_one_one.tiff", rename = metadata_rename, panel.height = 2.8)
+
+as.data.frame(featureMat$one.two)->tmp
+colnames(tmp)<-"three.one"
+eff_size_plot(metaMat=metaMat, featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_one_two.tiff", rename = metadata_rename, panel.height = 2.8)
+
+as.data.frame(featureMat$two.one)->tmp
+colnames(tmp)<-"three.one"
+eff_size_plot(metaMat=metaMat, featureMat = tmp,signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_two_one.tiff", rename = metadata_rename, panel.height = 2.8)
+
+as.data.frame(featureMat$two.two)->tmp
+colnames(tmp)<-"three.one"
+eff_size_plot(metaMat=metaMat, featureMat = tmp, signif_only = TRUE, logistic = TRUE, filename="Figs5c_effsize_zwo_two.tiff", rename = metadata_rename, panel.height = 2.8)
+
+
+
+```
+
+```{r figure S5a}
+#S5a
+lapply(names(trajectories), FUN=function(x){
+ cbind("celltype"=rep(x, 114), 
+       as.data.frame(trajectories[[x]][["cld"]]@traj),
+       "cluster"=kml_clustering_reduced[[x]],
+      "patient"=trajectories[[x]][["cld"]]@idAll)
+})%>%rbindlist()%>%melt(id.vars = c("celltype", "cluster", "patient"), measure.vars = c("t1", "t2", "t3"))->traj_imputed
+
+
+
+traj_imputed$celltype[traj_imputed$celltype=="M9"]<-"M4"
+traj_imputed$celltype[traj_imputed$celltype=="B12"]<-"B2"
+traj_imputed$celltype[traj_imputed$celltype=="B8"]<-"B2"
+traj_imputed$celltype[traj_imputed$celltype=="B13"]<-"B3"
+traj_imputed$celltype[traj_imputed$celltype=="B10"]<-"B3"
+traj_imputed$celltype[traj_imputed$celltype=="T9"]<-"T4"
+traj_imputed$celltype[traj_imputed$celltype=="M15"]<-"M5"
+traj_imputed$celltype[traj_imputed$celltype=="M8"]<-"MN"
+traj_imputed$celltype[traj_imputed$celltype=="M6"]<-"MN"
+#rename
+
+traj_imputed$celltype[traj_imputed$celltype=="M14"]<-"ILC2"
+traj_imputed$celltype[traj_imputed$celltype=="B9"]<-"B8"
+traj_imputed$celltype[traj_imputed$celltype=="B11"]<-"B9"
+traj_imputed$celltype[traj_imputed$celltype=="B14"]<-"B10"
+
+
+traj_imputed$celltype[traj_imputed$celltype=="M7"]<-"M6"
+traj_imputed$celltype[traj_imputed$celltype=="M10"]<-"M7"
+traj_imputed$celltype[traj_imputed$celltype=="M11"]<-"M8"
+traj_imputed$celltype[traj_imputed$celltype=="M12"]<-"M9"
+traj_imputed$celltype[traj_imputed$celltype=="M13"]<-"M10"
+
+traj_imputed$celltype[traj_imputed$celltype=="T10"]<-"T9"
+traj_imputed$celltype[traj_imputed$celltype=="T11"]<-"T10"
+traj_imputed$celltype[traj_imputed$celltype=="T12"]<-"T11"
+traj_imputed$celltype[traj_imputed$celltype=="T13"]<-"T12"
+traj_imputed$celltype[traj_imputed$celltype=="T14"]<-"T13"
+traj_imputed$celltype[traj_imputed$celltype=="T15"]<-"T14"
+
+traj_imputed$variable<-stringr::str_replace(traj_imputed$variable, "t", "TP")
+
+traj_imputed[traj_imputed$celltype!="MN",]->traj_imputed
+
+traj_imputed$celltype<-factor(as.character(traj_imputed$celltype), 
+levels= c("T1", "T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12","T13","T14", "B1","B2","B3","B4","B5","B6","B7","B8","B9","B10","ILC2","M1","M2","M3","M4","M5","M6","M7","M8","M9","M10", "NK1","NK2","NK3","NK4","NK5","ST1","ST2","ST3")  
+)
+
+
+traj_imputed$cluster<-as.character(traj_imputed$cluster)
+traj_imputed$cluster[traj_imputed$cluster=="A"&!is.na(traj_imputed$cluster)]<-"I"
+traj_imputed$cluster[traj_imputed$cluster=="B"&!is.na(traj_imputed$cluster)]<-"II"
+traj_imputed$cluster[traj_imputed$cluster=="C"&!is.na(traj_imputed$cluster)]<-"III"
+traj_imputed$cluster[traj_imputed$cluster=="D"&!is.na(traj_imputed$cluster)]<-"IV"
+traj_imputed$cluster<-as.factor(traj_imputed$cluster)
+
+p<-ggplot(data = traj_imputed, aes(x=variable, y=value, group=patient))+
+  geom_line(alpha=0.2)+
+  geom_smooth(data= traj_imputed[!is.na(traj_imputed$cluster), ],aes(group=cluster, color=cluster), se=FALSE, linewidth=4)+
+  facet_wrap(~celltype, scales = "free")+
+  theme_minimal()+
+  labs(x="Timepoint", y="% of MNC", color= "Cluster")+
+  theme(axis.text = element_text(size=80),
+        legend.text = element_text(size=80),
+        axis.title = element_text(size=80),
+        strip.text = element_text(size=80),
+        legend.title = element_text(size=80),
+        legend.key.size = unit(2, "cm"))
+
+
+
+tiff(filename= "Fig_s5a.tiff", width=5000, height=5000)
+plot(p)
+dev.off()
+
+
+```
+
+```{r Fig 6}
+metadata_PatID$GA_days_centered<-metadata_PatID$GA_days-mean(metadata_PatID$GA_days)
+metadata_PatID$lockdown_sum_centered<-metadata_PatID$lockdown_sum-mean(metadata_PatID$lockdown_sum)
+
+metadata_PatID$lockdown_ss_centered<-metadata_PatID$lockdown_ss-mean(metadata_PatID$lockdown_ss)
+
+metadata_PatID$lockdown_infant_centered<-metadata_PatID$lockdown_infant-mean(metadata_PatID$lockdown_infant)
+
+#binary
+#1
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden_clusters_imputed_reduced$membership)[[".data_1"]]
+glmmTMB::glmmTMB(lockdown_sum_centered~GA_days_centered*variable, metadata_PatID)->m0_trait1_GA_sum
+
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden_clusters_imputed_reduced$membership)[[".data_1"]]
+glmmTMB::glmmTMB(lockdown_ss_centered~GA_days_centered*variable, metadata_PatID)->m0_trait1_GA_sum
+
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden_clusters_imputed_reduced$membership)[[".data_1"]]
+glmmTMB::glmmTMB(lockdown_infant_centered~GA_days_centered*variable, metadata_PatID)->m0_trait1_GA_sum
+
+#2+3
+abs(metadata_PatID$variable-1)->metadata_PatID$variable
+glmmTMB::glmmTMB(lockdown_sum_centered~GA_days_centered*variable, metadata_PatID)->m0_trait2_3_GA_sum
+
+#3
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden_clusters_imputed_reduced$membership)[[".data_3"]]
+glmmTMB::glmmTMB(lockdown_sum_centered~GA_days_centered*variable, metadata_PatID)->m0_trait3_GA_sum
+
+
+#without 2
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden_clusters_imputed_reduced$membership)[[".data_1"]]
+glmmTMB::glmmTMB(lockdown_sum_centered~GA_days_centered*variable, metadata_PatID[fastDummies::dummy_cols(leiden_clusters_imputed_reduced$membership)[[".data_2"]]!=1,])->m0_trait1_GA_sum_no2
+
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden_clusters_imputed_reduced$membership)[[".data_3"]]
+glmmTMB::glmmTMB(lockdown_sum_centered~GA_days_centered*variable, metadata_PatID[fastDummies::dummy_cols(leiden_clusters_imputed_reduced$membership)[[".data_2"]]!=1,])->m0_trait3_GA_sum_no2
+
+metadata_PatID$lockdown_binary_sum<-rep(0, 114)
+metadata_PatID$lockdown_binary_sum[metadata_PatID$lockdown_sum>7.37]<-1
+
+metadata_PatID$lockdown_binary_infant<-rep(0, 114)
+metadata_PatID$lockdown_binary_infant[metadata_PatID$lockdown_infant>5.81]<-1
+
+metadata_PatID$lockdown_binary_ss<-rep(0, 114)
+metadata_PatID$lockdown_binary_ss[metadata_PatID$lockdown_ss>1.56]<-1
+
+#plot increasing log dds
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden$membership)[[".data_3"]]
+metadata_PatID$lockdown_sum_days<-metadata_PatID$lockdown_sum*28
+metadata_PatID$lockdown_sum_days_centered<-metadata_PatID$lockdown_sum_days-mean(metadata_PatID$lockdown_sum_days)
+
+
+
+#results_trait1_GA[,1]<-1:224
+#results_trait1_GA<-as.data.frame(results_trait1_GA)
+#colnames(results_trait1_GA)<-c("days", "odds", "confint_low", "confint_high")
+#results_trait1_GA$odds<-exp(results_trait1_GA$odds)
+
+#ggplot(results_trait1_GA, aes(x=days, y=odds))+
+#  geom_point()+
+#  geom_errorbar(aes(ymin = confint_low, ymax = confint_high), width = 0.2) +
+#  xlab("lockdown days")+
+#  ylab("Odds Ratio")+
+#  labs(title="Trait 1 with GA")
+
+
+
+
+
+plot_model(m0_trait1_GA_sum, type = "est", show.values = TRUE, value.offset = 0.3)+theme_minimal()
+
+
+#rocauc plots
+
+fastDummies::dummy_cols(leiden$membership)->ITJ_dummies
+metadata_PatID$immunotrait<-abs(ITJ_dummies$.data_1-1)
+library(pROC)
+roc_obj <- roc(immunotrait~lockdown_sum_centered, metadata_PatID)
+
+roc_df <- data.frame(
+  TPR = roc_obj$sensitivities,
+  FPR = 1 - roc_obj$specificities
+)
+
+ggplot(roc_df, aes(x = FPR, y = TPR)) +
+  geom_line(color = "#2C3E50", size = 1.2) +               # ROC curve
+  geom_abline(linetype = "dashed", color = "gray") +       # Diagonal line
+  theme_minimal(base_size = 14) +                          # Clean theme
+  labs(
+    title = sprintf("ROC Curve (AUC = %.3f)", roc_obj$auc),
+    x = "False Positive Rate (1 - Specificity)",
+    y = "True Positive Rate (Sensitivity)"
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.text = element_text(color = "black")
+  )
+
+#different approach
+#being cluster 3 vs rest
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden$membership)[[".data_3"]]
+metadata_PatID$w <- ifelse(metadata_PatID$variable == 1, 10, 1)
+
+glmmTMB::glmmTMB(variable~GA_days_centered*lockdown_sum_centered, metadata_PatID, family="binomial", weights = w)->m0_trait3_GA_sum
+
+dat<-data.frame("probability"=predict(m0_trait3_GA_sum, type="response"), "lockdown"=(metadata_PatID$lockdown_sum))
+
+pROC::roc(dat$probability, response=metadata_PatID$variable)->roc
+pROC::coords(roc, "best", best.weights=c(10, 29/114))
+
+# Solve for lockdown_sum_centered
+b <- lme4::fixef(m0_trait3_GA_sum)$cond
+GA_c<-0 #mean GA_days_centered
+eta_cutoff<-qlogis(pROC::coords(roc, "best", best.weights=c(10, 29/114))[[1]])
+lockdown_c <- (eta_cutoff - b["(Intercept)"] - b["GA_days_centered"] * GA_c) /
+              (b["lockdown_sum_centered"] + b["GA_days_centered:lockdown_sum_centered"] * GA_c)
+
+# Back-transform to original scale
+lockdown_duration <- lockdown_c + mean(metadata_PatID$lockdown_sum)
+print(lockdown_duration)
+
+# 1. Fit the smoother manually to extract fitted values
+smooth_data <- ggplot_build(
+  ggplot(dat, aes(lockdown, probability)) +
+    geom_smooth(se=TRUE)
+)$data[[1]]
+
+smooth_df <- data.frame(
+  x = smooth_data$x,
+  y = smooth_data$y,
+  ymin = smooth_data$ymin,
+  ymax = smooth_data$ymax
+)
+
+
+# 3. Split into left and right
+smooth_df_left  <- subset(smooth_df, x <= lockdown_duration)
+smooth_df_right <- subset(smooth_df, x > lockdown_duration)
+
+
+
+# 4. Plot with filled areas
+
+dat$cluster<-factor(leiden$membership)
+
+ggplot() +
+  geom_area(data = smooth_df_left, aes(x, y), fill = "#CCCCFE") +
+  geom_area(data = smooth_df_right, aes(x, y), fill = "#FFEDCC") +
+  geom_ribbon(data = smooth_df, aes(x = x, ymin = ymin, ymax = ymax),
+              fill = "grey") +
+  geom_line(data = smooth_df, aes(x, y), color = "blue", linewidth = 2) +
+  geom_point(data = dat, aes(x=`lockdown`, y=`probability`, fill = factor(cluster)), alpha=0.5, size=5, shape=21) +
+  scale_fill_manual(name="ITJ", values=c("3"="#7E3F8F", "1"="#278046", "2"="#FAD510"))+
+  geom_vline(xintercept=lockdown_duration, color="red", linetype=2, linewidth=2)+
+  scale_x_continuous(n.breaks = 10)+
+  theme_bw() +
+  labs(
+    title = "GLM-derived cutoff",
+    x = "Lockdown duration (months)", y = "Predicted probability"
+  )+
+ # geom_text(aes(x=11, y=0.2), label="ITJ-3", color="#7E3F8F", size=12)+
+#  geom_text(aes(x=6.7, y=0.027), label="ITJ-1", color="#278046", size=12)+
+  
+  geom_rect(aes(xmin=-0.6, ymax=0.88, ymin=0.76, xmax=9), fill="grey", alpha=0.5, color="grey")+
+  
+  geom_text(aes(x=5, y=0.85), label="Predicted probability", size=10)+
+  geom_segment(aes(x=-0.5, xend=1, y=0.84), linewidth=2, color="blue")+
+  
+  geom_text(aes(x=3.55, y=0.79), label=paste("Cutoff =", round(lockdown_duration, 2)), size=10)+
+  geom_segment(aes(x=-0.5, xend=1, y=0.79), linewidth=2, color="red", linetype=2)+
+
+  theme(text = element_text(size=40))->p
+
+ggsave("FigS6d_proba_plot.tiff", p, width=15, height = 10)
+
+
+#being cluster 3 vs being 1
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden$membership)[[".data_3"]]
+metadata_PatID$w <- ifelse(metadata_PatID$variable == 1, 10, 1)
+
+glmmTMB::glmmTMB(variable~GA_days_centered*lockdown_sum_centered, metadata_PatID[leiden$membership!=2,], family="binomial", weights = w)->m0_trait3_GA_sum
+
+dat<-data.frame("probability"=predict(m0_trait3_GA_sum, type="response"), "lockdown"=(metadata_PatID$lockdown_sum[leiden$membership!=2]))
+
+pROC::roc(dat$probability, response=metadata_PatID$variable[leiden$membership!=2])->roc
+pROC::coords(roc, "best", best.weights=c(10, 29/95))
+
+# Solve for lockdown_sum_centered
+b <- lme4::fixef(m0_trait3_GA_sum)$cond
+GA_c<-0 #mean GA_days_centered
+eta_cutoff<-qlogis(pROC::coords(roc, "best", best.weights=c(10, 29/95))[[1]])
+lockdown_c <- (eta_cutoff - b["(Intercept)"] - b["GA_days_centered"] * GA_c) /
+              (b["lockdown_sum_centered"] + b["GA_days_centered:lockdown_sum_centered"] * GA_c)
+
+# Back-transform to original scale
+lockdown_duration <- lockdown_c + mean(metadata_PatID$lockdown_sum[leiden$membership!=2])
+print(lockdown_duration)
+
+# 1. Fit the smoother manually to extract fitted values
+smooth_data <- ggplot_build(
+  ggplot(dat, aes(lockdown, probability)) +
+    geom_smooth(se=TRUE)
+)$data[[1]]
+
+smooth_df <- data.frame(
+  x = smooth_data$x,
+  y = smooth_data$y,
+  ymin = smooth_data$ymin,
+  ymax = smooth_data$ymax
+)
+
+
+# 3. Split into left and right
+smooth_df_left  <- subset(smooth_df, x <= lockdown_duration)
+smooth_df_right <- subset(smooth_df, x > lockdown_duration)
+
+
+
+# 4. Plot with filled areas
+
+dat$cluster<-factor(leiden$membership[leiden$membership!=2])
+
+ggplot() +
+  geom_area(data = smooth_df_left, aes(x, y), fill = "#CCCCFE") +
+  geom_area(data = smooth_df_right, aes(x, y), fill = "#FFEDCC") +
+  geom_ribbon(data = smooth_df, aes(x = x, ymin = ymin, ymax = ymax),
+              fill = "grey") +
+  geom_line(data = smooth_df, aes(x, y), color = "blue", linewidth = 2) +
+  geom_point(data = dat, aes(x=`lockdown`, y=`probability`, fill = factor(cluster)), alpha=0.5, size=5, shape=21) +
+  scale_fill_manual(name="ITJ", values=c("3"="#7E3F8F", "1"="#278046", "2"="#FAD510"))+
+  geom_vline(xintercept=lockdown_duration, color="red", linetype=2, linewidth=2)+
+  scale_x_continuous(n.breaks = 10)+
+  theme_bw() +
+  labs(
+    title = "GLM-derived cutoff",
+    x = "Lockdown exposure (months)", y = "Predicted probability"
+  )+
+ # geom_text(aes(x=11, y=0.2), label="ITJ-3", color="#7E3F8F", size=12)+
+#  geom_text(aes(x=6.7, y=0.027), label="ITJ-1", color="#278046", size=12)+
+  
+  geom_rect(aes(xmin=-0.6, ymax=0.88, ymin=0.76, xmax=9), fill="grey", alpha=0.5, color="grey")+
+  
+  geom_text(aes(x=5, y=0.85), label="Predicted probability", size=10)+
+  geom_segment(aes(x=-0.5, xend=1, y=0.84), linewidth=2, color="blue")+
+  
+  geom_text(aes(x=3.55, y=0.79), label=paste("Cutoff =", round(lockdown_duration, 2)), size=10)+
+  geom_segment(aes(x=-0.5, xend=1, y=0.79), linewidth=2, color="red", linetype=2)+
+
+  theme(text = element_text(size=40))->p
+
+ggsave("FigS6d_proba_plot.tiff", p, width=15, height = 10)
+
+
+#being cluster 2 or 3 vs not being 1
+metadata_PatID$variable<-fastDummies::dummy_cols(leiden$membership)[[".data_1"]]
+metadata_PatID$variable<-abs(metadata_PatID$variable-1)
+metadata_PatID$w <- ifelse(metadata_PatID$variable == 1, 10, 1)
+
+glmmTMB::glmmTMB(variable~GA_days_centered*lockdown_sum_centered, metadata_PatID, family="binomial", weights = w)->m0_trait3_GA_sum
+
+dat<-data.frame("probability"=predict(m0_trait3_GA_sum, type="response"), "lockdown"=(metadata_PatID$lockdown_sum))
+
+pROC::roc(dat$probability, response=metadata_PatID$variable)->roc
+pROC::coords(roc, "best", best.weights=c(10, 48/114))
+
+# Solve for lockdown_sum_centered
+b <- lme4::fixef(m0_trait3_GA_sum)$cond
+GA_c<-0 #mean GA_days_centered
+eta_cutoff<-qlogis(pROC::coords(roc, "best", best.weights=c(10, 48/114))[[1]])
+lockdown_c <- (eta_cutoff - b["(Intercept)"] - b["GA_days_centered"] * GA_c) /
+              (b["lockdown_sum_centered"] + b["GA_days_centered:lockdown_sum_centered"] * GA_c)
+
+# Back-transform to original scale
+lockdown_duration <- lockdown_c + mean(metadata_PatID$lockdown_sum)
+print(lockdown_duration)
+
+# 1. Fit the smoother manually to extract fitted values
+smooth_data <- ggplot_build(
+  ggplot(dat, aes(lockdown, probability)) +
+    geom_smooth(se=TRUE)
+)$data[[1]]
+
+smooth_df <- data.frame(
+  x = smooth_data$x,
+  y = smooth_data$y,
+  ymin = smooth_data$ymin,
+  ymax = smooth_data$ymax
+)
+
+
+# 3. Split into left and right
+smooth_df_left  <- subset(smooth_df, x <= lockdown_duration)
+smooth_df_right <- subset(smooth_df, x > lockdown_duration)
+
+
+
+# 4. Plot with filled areas
+
+dat$cluster<-factor(metadata_PatID$cluster)
+
+ggplot() +
+  geom_area(data = smooth_df_left, aes(x, y), fill = "#CCCCFE") +
+  geom_area(data = smooth_df_right, aes(x, y), fill = "#FFEDCC") +
+  geom_ribbon(data = smooth_df, aes(x = x, ymin = ymin, ymax = ymax),
+              fill = "grey") +
+  geom_line(data = smooth_df, aes(x, y), color = "blue", linewidth = 2) +
+  geom_point(data = dat, aes(x=`lockdown`, y=`probability`, fill = factor(cluster)), alpha=0.5, size=5, shape=21) +
+  scale_fill_manual(name="ITJ", values=c("3"="#7E3F8F", "1"="#278046", "2"="#FAD510"))+
+  geom_vline(xintercept=lockdown_duration, color="red", linetype=2, linewidth=2)+
+  scale_x_continuous(n.breaks = 10)+
+  theme_bw() +
+  labs(
+    title = "GLM-derived cut-off",
+    x = "Lockdown exposure (months)", y = "Predicted probability"
+  )+
+ # geom_text(aes(x=11, y=0.2), label="ITJ-3", color="#7E3F8F", size=12)+
+#  geom_text(aes(x=6.7, y=0.027), label="ITJ-1", color="#278046", size=12)+
+  
+  geom_rect(aes(xmin=-0.6, ymax=0.88, ymin=0.76, xmax=9), fill="grey", alpha=0.5, color="grey")+
+  
+  geom_text(aes(x=5, y=0.85), label="Predicted probability", size=10)+
+  geom_segment(aes(x=-0.5, xend=1, y=0.84), linewidth=2, color="blue")+
+  
+  geom_text(aes(x=3.7, y=0.79), label=paste("Cut-off =", round(lockdown_duration, 2)), size=10)+
+  geom_segment(aes(x=-0.5, xend=1, y=0.79), linewidth=2, color="red", linetype=2)+
+
+  theme(text = element_text(size=40))->p
+
+ggsave("FigS6d_proba_plot.tiff", p, width=15, height = 10)
+
+
+metadata_PatID$lockdown_binary<-as.numeric(metadata_PatID$lockdown_sum>9.76)
+metadata_PatID$cluster<-leiden$membership
+
+as.data.frame(table(metadata_PatID$lockdown_binary, metadata_PatID$cluster))->data_grouped
+data_grouped%>%group_by(Var2)%>%mutate("freq"=Freq/sum(Freq))->data_grouped
+
+ggplot(data_grouped, aes(fill=factor(Var1), y=freq*100, x=factor(Var2, levels=c(1,2,3)))) +
+    geom_bar(position='stack', stat='identity')+
+    scale_fill_manual("Lockdown", values = c("#103f91", "#861513"), labels=c("Non-LD", "LD"))+
+    xlab("ITJ")+
+    ylab("Event rate (%)")+
+    theme_classic()+
+      theme(legend.text = element_text(size=60), 
+          legend.title = element_text(size=60, vjust=2),
+          axis.title = element_text(size=60, color="black"),
+          axis.text = element_text(size=60, color="black"),
+          plot.title = element_blank(),
+          aspect.ratio = 1.3,
+          legend.key.size=unit(2, "cm"))->p
+
+
+ggsave("FigS6d_barplot.tiff", p, width=15, height = 15)
+
+
+#ggprism
+library(ggprism)
+cohort_B$LRTI<-as.numeric(cohort_B$LRTI)
+dat <- cohort_B[!is.na(cohort_B$LRTI),] %>%
+  group_by(group_lockdown_sum) %>%
+  summarise(
+    mean_count = mean(LRTI),
+    sem_count = sd(LRTI)/(sqrt(n()))
+  )
+
+dat$group_lockdown_sum<-factor(dat$group_lockdown_sum, levels = c(c( "Non-LD_Pre LD", "LD_Post expo", "LD_w/o expo", "LD_Pre expo", "Non-LD_Post LD")))
+
+ggplot(dat, aes(x = group_lockdown_sum, y = mean_count, fill = group_lockdown_sum, color = group_lockdown_sum )) +
+  geom_col(width=0.6) +
+  
+  # vertical line: mean → mean + SEM (upward only)
+  geom_linerange(aes(ymin = mean_count, ymax = mean_count + sem_count),
+                 linewidth = 0.8) +
+  
+  # top cap: horizontal short line at the top
+  geom_crossbar(aes(y = mean_count + sem_count, ymin = mean_count + sem_count, ymax = mean_count + sem_count),
+                width = 0.2, linewidth = 0.4) +
+  
+  labs( y = "Number of events") +
+  scale_color_manual(breaks=c("Non-LD_Post LD", "LD_Pre expo", "LD_w/o expo", "LD_Post expo", "Non-LD_Pre LD"),
+                    values=c("#333241", "#861513" , "#fb0207",    "#ff866b", "#103f91"),
+                    labels=c("Non-LD_Post LD", "LD_Pre expo", "LD_w/o expo", "LD_Post expo", "Non-LD_Pre LD"),
+                    guide="none")+
+  scale_fill_manual(breaks=c("Non-LD_Post LD", "LD_Pre expo", "LD_w/o expo", "LD_Post expo", "Non-LD_Pre LD"),
+                    values=c("#333241", "#861513" , "#fb0207",    "#ff866b", "#103f91"),
+                    labels=c("Non-LD_Post LD", "LD_Pre expo", "LD_w/o expo", "LD_Post expo", "Non-LD_Pre LD"),
+                    guide="none")+
+  theme_prism(axis_text_angle = 45)+
+  theme(axis.title.x = element_blank(),
+        aspect.ratio = 1)
+
+```
+
+ 
+
+
